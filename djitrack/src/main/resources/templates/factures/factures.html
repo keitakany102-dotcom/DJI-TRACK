@@ -1,0 +1,14 @@
+// Dans login.html
+const response = await fetch('/api/auth/login', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ email, password })
+});
+
+if (response.ok) {
+const data = await response.json();
+// ✅ STOCKER LE TOKEN
+localStorage.setItem('djitrack_token', data.token);
+// Rediriger
+window.location.href = '/dashboard/admin';
+}

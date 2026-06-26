@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside th:fragment="sidebar-agent" class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <i class="bi bi-lightning-fill"></i>
+        <span>DjiTrack</span>
+    </div>
+    <nav class="sidebar-nav">
+        <ul>
+            <li class="nav-item">
+                <a href="/dashboard/agent"><i class="bi bi-grid-1x2-fill"></i> Tableau de bord</a>
+            </li>
+            <li class="nav-item">
+                <a href="/abonnes"><i class="bi bi-people-fill"></i> Abonnés</a>
+            </li>
+            <li class="nav-item">
+                <a href="/releves"><i class="bi bi-speedometer2"></i> Relevés</a>
+            </li>
+            <li class="nav-item">
+                <a href="/factures"><i class="bi bi-file-earmark-text-fill"></i> Factures</a>
+            </li>
+            <li class="nav-item">
+                <a href="/paiements"><i class="bi bi-credit-card-fill"></i> Paiements</a>
+            </li>
+            <li class="nav-item">
+                <a href="/reclamations"><i class="bi bi-chat-dots-fill"></i> Réclamations</a>
+            </li>
+            <li class="nav-item">
+                <a href="/rapports"><i class="bi bi-file-earmark-bar-graph-fill"></i> Rapports</a>
+            </li>
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-danger btn-sm w-100">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </button>
+        </form>
+    </div>
+</aside>
+
+<!-- Script pour gérer la classe active -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPath = window.location.pathname;
+        const navItems = document.querySelectorAll('#sidebar .nav-item');
+        navItems.forEach(item => {
+            const link = item.querySelector('a');
+            if (link) {
+                const href = link.getAttribute('href');
+                // Vérifier si le chemin actuel correspond ou contient le lien
+                if (currentPath === href || (href !== '/' && currentPath.startsWith(href))) {
+                    item.classList.add('active');
+                }
+            }
+        });
+    });
+</script>
+</body>
+</html>

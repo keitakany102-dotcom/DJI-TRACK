@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DjiTrack - Connexion</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .login-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 48px 40px;
+        width: 100%;
+        max-width: 440px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .login-brand { text-align: center; margin-bottom: 32px; }
+    .login-brand i { font-size: 3rem; color: #f0b429; }
+    .login-brand h2 { font-weight: 700; color: #0d1117; margin-top: 8px; }
+    .login-brand p { color: #6b7280; font-size: 0.95rem; }
+    .form-control { padding: 12px 16px; border-radius: 10px; }
+    .btn-login { padding: 12px; border-radius: 10px; font-weight: 600; background: #0d1117; border: none; color: #fff; }
+    .btn-login:hover { background: #1a1f2e; color: #fff; }
+    .demo-credentials {
+        background: #f3f4f6;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 0.85rem;
+        color: #4b5563;
+        margin-top: 16px;
+    }
+    .demo-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #e5e7eb; }
+    .demo-item:last-child { border-bottom: none; }
+    .demo-item code { background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+    .role-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; color: #fff; }
+    .role-badge.admin { background: #dc2626; }
+    .role-badge.agent { background: #2563eb; }
+    .role-badge.abonne { background: #16a34a; }
+    .alert { border-radius: 10px; }
+  </style>
+</head>
+<body>
+<div class="login-card">
+  <div class="login-brand">
+    <i class="bi bi-lightning-fill"></i>
+    <h2>DjiTrack</h2>
+    <p>Plateforme de gestion des abonnements</p>
+  </div>
+
+  <form id="loginForm">
+    <div id="loginResult"></div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Email</label>
+      <input type="email" id="email" class="form-control" placeholder="admin@djitrack.com" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Mot de passe</label>
+      <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-login w-100" id="loginBtn">
+      <i class="bi bi-box-arrow-in-right"></i> Se connecter
+    </button>
+  </form>
+
+  <div class="demo-credentials">
+    <strong>🔑 Comptes de démo :</strong>
+    <div class="demo-item">
+      <span><span class="role-badge admin">Admin</span></span>
+      <span><code>admin@djitrack.com</code></span>
+    </div>
+    <div class="demo-item">
+      <span><span class="role-badge agent">Agent</span></span>
+      <span><code>agent@djitrack.com</code></span>
+    </div>
+    <div class="demo-item">
+      <span><span class="role-badge abonne">Abonné</span></span>
+      <span><code>abonne@djitrack.com</code></span>
+    </div>
+    <div class="text-muted mt-1" style="font-size:0.8rem;">Mot de passe: <code>admin123</code> / <code>agent123</code> / <code>abonne123</code></div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+      const resultDiv = document.getElementById('loginResult');
+
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Connexion...';
+      resultDiv.innerHTML = '';
+
+      try {
+          const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password })
+          });
+
+          if (response.ok) {
+              const data = await response.json();
+              // ✅ Stocker le token
+              localStorage.setItem('djitrack_token', data.token);
+
+              resultDiv.innerHTML = `<div class="alert alert-success">✅ Connexion réussie ! Redirection...</div>`;
+
+              setTimeout(() => {
+                  window.location.href = '/dashboard/admin';
+              }, 1000);
+          } else {
+              const error = await response.text();
+              resultDiv.innerHTML = `<div class="alert alert-danger">❌ ${error || 'Email ou mot de passe incorrect'}</div>`;
+              loginBtn.disabled = false;
+              loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Se connecter';
+          }
+      } catch (error) {
+          resultDiv.innerHTML = `<div class="alert alert-danger">❌ Erreur de connexion: ${error.message}</div>`;
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Se connecter';
+      }
+  });
+</script>
+</body>
+</html>

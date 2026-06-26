@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header('Relevés')}">
+</head>
+<body>
+<div th:replace="${#authentication.authorities.contains('ROLE_ADMIN')} ? ~{fragments/sidebar-admin :: sidebar-admin} : ~{fragments/sidebar-agent :: sidebar-agent}"></div>
+<!-- Dans toutes les pages -->
+<div th:insert="~{fragments/sidebar-selector :: sidebar-selector}"></div>
+<main class="main-content" id="mainContent">
+    <header class="main-header">
+        <div class="header-left">
+            <button class="btn btn-toggle-sidebar" id="toggleSidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <h4 class="page-title">Relevés</h4>
+        </div>
+        <div class="header-right">
+            <span class="badge bg-primary me-3" th:text="${#authentication.authorities.contains('ROLE_ADMIN')} ? 'Admin' : 'Agent'">Admin</span>
+            <span class="user-email" th:text="${#authentication.name}">user@djitrack.com</span>
+        </div>
+    </header>
+
+    <section class="content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Relevés de compteurs</h4>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#releveModal">
+                <i class="bi bi-plus-circle"></i> Nouveau relevé
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="relevesTable">
+                        <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Abonné</th>
+                            <th>Date relevé</th>
+                            <th>Ancienne valeur</th>
+                            <th>Nouvelle valeur</th>
+                            <th>Consommation</th>
+                        </tr>
+                        </thead>
+                        <tbody id="relevesTableBody">
+                        <tr><td colspan="6" class="text-center text-muted">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Modal Nouveau Relevé -->
+<div class="modal fade" id="releveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouveau relevé</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="releveForm">
+                    <div class="mb-2">
+                        <label>ID Abonné</label>
+                        <input type="number" name="abonneId" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Ancienne valeur</label>
+                        <input type="number" name="ancienneValeur" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="mb-2">
+                        <label>Nouvelle valeur</label>
+                        <input type="number" name="nouvelleValeur" class="form-control" step="0.01" required>
+                    </div>
+                    <div id="releveFormResult"></div>
+                    <button type="submit" class="btn btn-primary w-100">Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:replace="~{fragments/scripts :: scripts}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadReleves();
+    });
+
+    async function loadReleves() {
+        try {
+            const response = await fetch('/api/releves');
+            const data = await response.json();
+            const tbody = document.getElementById('relevesTableBody');
+
+            if (!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Aucun relevé</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.id || '-'}</td>
+                    <td>${item.abonne?.utilisateur?.nom || '-'}</td>
+                    <td>${item.dateReleve ? new Date(item.dateReleve).toLocaleDateString('fr-FR') : '-'}</td>
+                    <td>${item.ancienneValeur || 0}</td>
+                    <td>${item.nouvelleValeur || 0}</td>
+                    <td><span class="badge bg-info">${item.consommation || 0}</span></td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Load releves error:', error);
+        }
+    }
+
+    document.getElementById('releveForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {
+            dateReleve: new Date().toISOString().split('T')[0],
+            ancienneValeur: parseFloat(formData.get('ancienneValeur')),
+            nouvelleValeur: parseFloat(formData.get('nouvelleValeur')),
+            abonne: { id: parseInt(formData.get('abonneId')) }
+        };
+
+        try {
+            const response = await fetch('/api/releves', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                document.getElementById('releveFormResult').innerHTML =
+                    '<div class="alert alert-success">✅ Relevé enregistré avec succès</div>';
+                this.reset();
+                loadReleves();
+                setTimeout(() => {
+                    document.querySelector('#releveModal .btn-close')?.click();
+                }, 1500);
+            } else {
+                document.getElementById('releveFormResult').innerHTML =
+                    '<div class="alert alert-danger">❌ Erreur lors de l\'enregistrement</div>';
+            }
+        } catch (error) {
+            document.getElementById('releveFormResult').innerHTML =
+                '<div class="alert alert-danger">❌ Erreur de connexion</div>';
+        }
+    });
+</script>
+</body>
+</html>

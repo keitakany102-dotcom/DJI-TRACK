@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header('Tableau de bord - Agent')}">
+</head>
+<body>
+<div th:replace="~{fragments/sidebar-agent :: sidebar-agent}"></div>
+<!-- Dans toutes les pages -->
+<div th:insert="~{fragments/sidebar-selector :: sidebar-selector}"></div>
+
+<main class="main-content" id="mainContent">
+    <header class="main-header">
+        <div class="header-left">
+            <button class="btn btn-toggle-sidebar" id="toggleSidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <h4 class="page-title">Tableau de bord</h4>
+        </div>
+        <div class="header-right">
+            <span class="badge bg-info me-3">Agent</span>
+            <span class="user-email" th:text="${#authentication.name}">agent@djitrack.com</span>
+        </div>
+    </header>
+
+    <section class="content">
+        <!-- Statistiques -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary"><i class="bi bi-people-fill"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Abonnés</span>
+                        <span class="stat-value" id="agentAbonnes">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-success"><i class="bi bi-credit-card-fill"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Paiements aujourd'hui</span>
+                        <span class="stat-value" id="agentPaiements">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning"><i class="bi bi-file-earmark-text-fill"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Factures impayées</span>
+                        <span class="stat-value" id="agentFactures">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-plus-circle"></i> Actions rapides</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/releves" class="btn btn-outline-primary">
+                                <i class="bi bi-speedometer2"></i> Nouveau relevé
+                            </a>
+                            <a href="/factures" class="btn btn-outline-success">
+                                <i class="bi bi-file-earmark-text"></i> Nouvelle facture
+                            </a>
+                            <a href="/abonnes" class="btn btn-outline-info">
+                                <i class="bi bi-person-plus"></i> Nouvel abonné
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-clock-history"></i> Dernières activités</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="agentActivity">
+                            <p class="text-muted text-center">Chargement...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:replace="~{fragments/scripts :: scripts}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAgentDashboard();
+    });
+
+    async function loadAgentDashboard() {
+        try {
+            const [abonnes, paiements, factures] = await Promise.all([
+                fetch('/api/abonnes').then(r => r.json()),
+                fetch('/api/paiements').then(r => r.json()),
+                fetch('/api/factures').then(r => r.json())
+            ]);
+
+            document.getElementById('agentAbonnes').textContent = Array.isArray(abonnes) ? abonnes.length : 0;
+            document.getElementById('agentPaiements').textContent = Array.isArray(paiements) ? paiements.length : 0;
+
+            const impayees = Array.isArray(factures) ? factures.filter(f => f.statut !== 'PAYEE').length : 0;
+            document.getElementById('agentFactures').textContent = impayees;
+
+            // Activité
+            const activity = document.getElementById('agentActivity');
+            const items = [];
+            if (Array.isArray(paiements) && paiements.length) {
+                items.push(`💰 ${paiements.length} paiement(s) effectué(s)`);
+            }
+            if (impayees > 0) {
+                items.push(`⚠️ ${impayees} facture(s) en attente de paiement`);
+            }
+            activity.innerHTML = items.length ?
+                `<ul class="list-unstyled">${items.map(i => `<li><i class="bi bi-dot"></i> ${i}</li>`).join('')}</ul>` :
+                '<p class="text-muted text-center">Aucune activité récente</p>';
+
+        } catch (error) {
+            console.error('Agent dashboard error:', error);
+        }
+    }
+</script>
+</body>
+</html>

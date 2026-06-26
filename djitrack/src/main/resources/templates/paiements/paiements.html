@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header('Paiements')}">
+</head>
+<body>
+<div th:replace="${#authentication.authorities.contains('ROLE_ADMIN')} ? ~{fragments/sidebar-admin :: sidebar-admin} :
+                       ${#authentication.authorities.contains('ROLE_AGENT')} ? ~{fragments/sidebar-agent :: sidebar-agent} :
+                       ~{fragments/sidebar-abonne :: sidebar-abonne}"></div>
+<!-- Dans toutes les pages -->
+<div th:insert="~{fragments/sidebar-selector :: sidebar-selector}"></div>
+<main class="main-content" id="mainContent">
+    <header class="main-header">
+        <div class="header-left">
+            <button class="btn btn-toggle-sidebar" id="toggleSidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <h4 class="page-title">Paiements</h4>
+        </div>
+        <div class="header-right">
+                <span class="badge bg-primary me-3" th:text="${#authentication.authorities.contains('ROLE_ADMIN')} ? 'Admin' :
+                                                             ${#authentication.authorities.contains('ROLE_AGENT')} ? 'Agent' : 'Abonné'">User</span>
+            <span class="user-email" th:text="${#authentication.name}">user@djitrack.com</span>
+        </div>
+    </header>
+
+    <section class="content">
+        <!-- Formulaires de paiement -->
+        <div class="row g-3 mb-4" th:if="${#authentication.authorities.contains('ROLE_ADMIN') or #authentication.authorities.contains('ROLE_AGENT')}">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-phone text-warning"></i> Orange Money</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="orangePayForm">
+                            <div class="mb-2">
+                                <label>ID Facture</label>
+                                <input type="number" name="factureId" class="form-control" placeholder="ID facture" required>
+                            </div>
+                            <div class="mb-2">
+                                <label>Montant</label>
+                                <input type="number" name="montant" class="form-control" step="0.01" placeholder="Montant" required>
+                            </div>
+                            <div id="orangeResult"></div>
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="bi bi-phone"></i> Payer avec Orange Money
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-phone text-info"></i> Moov Money</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="moovPayForm">
+                            <div class="mb-2">
+                                <label>ID Facture</label>
+                                <input type="number" name="factureId" class="form-control" placeholder="ID facture" required>
+                            </div>
+                            <div class="mb-2">
+                                <label>Montant</label>
+                                <input type="number" name="montant" class="form-control" step="0.01" placeholder="Montant" required>
+                            </div>
+                            <div id="moovResult"></div>
+                            <button type="submit" class="btn btn-info w-100 text-white">
+                                <i class="bi bi-phone"></i> Payer avec Moov Money
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des paiements -->
+        <h5>Historique des paiements</h5>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="paiementsTable">
+                        <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Référence</th>
+                            <th>Facture</th>
+                            <th>Montant</th>
+                            <th>Mode</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                        </tr>
+                        </thead>
+                        <tbody id="paiementsTableBody">
+                        <tr><td colspan="7" class="text-center text-muted">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:replace="~{fragments/scripts :: scripts}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPaiements();
+    });
+
+    async function loadPaiements() {
+        try {
+            const response = await fetch('/api/paiements');
+            const data = await response.json();
+            const tbody = document.getElementById('paiementsTableBody');
+
+            if (!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun paiement</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.id || '-'}</td>
+                    <td>${item.reference || '-'}</td>
+                    <td>${item.facture?.numero || '-'}</td>
+                    <td>${item.montant || 0} FCFA</td>
+                    <td><span class="badge ${item.mode === 'ORANGE' ? 'bg-warning' : 'bg-info'}">${item.mode || '-'}</span></td>
+                    <td><span class="badge ${item.statut === 'REUSSI' ? 'bg-success' : 'bg-danger'}">${item.statut || 'EN ATTENTE'}</span></td>
+                    <td>${item.datePaiement ? new Date(item.datePaiement).toLocaleDateString('fr-FR') : '-'}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Load paiements error:', error);
+        }
+    }
+
+    // Orange Money
+    document.getElementById('orangePayForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {
+            factureId: parseInt(formData.get('factureId')),
+            montant: parseFloat(formData.get('montant')),
+            mode: 'ORANGE'
+        };
+
+        try {
+            const response = await fetch('/api/paiements/orange-money', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('orangeResult').innerHTML =
+                    `<div class="alert alert-success">✅ ${result.message || 'Paiement Orange Money effectué'}</div>`;
+                this.reset();
+                loadPaiements();
+            } else {
+                document.getElementById('orangeResult').innerHTML =
+                    '<div class="alert alert-danger">❌ Erreur lors du paiement</div>';
+            }
+        } catch (error) {
+            document.getElementById('orangeResult').innerHTML =
+                '<div class="alert alert-danger">❌ Erreur de connexion</div>';
+        }
+    });
+
+    // Moov Money
+    document.getElementById('moovPayForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = {
+            factureId: parseInt(formData.get('factureId')),
+            montant: parseFloat(formData.get('montant')),
+            mode: 'MOOV'
+        };
+
+        try {
+            const response = await fetch('/api/paiements/moov-money', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('moovResult').innerHTML =
+                    `<div class="alert alert-success">✅ ${result.message || 'Paiement Moov Money effectué'}</div>`;
+                this.reset();
+                loadPaiements();
+            } else {
+                document.getElementById('moovResult').innerHTML =
+                    '<div class="alert alert-danger">❌ Erreur lors du paiement</div>';
+            }
+        } catch (error) {
+            document.getElementById('moovResult').innerHTML =
+                '<div class="alert alert-danger">❌ Erreur de connexion</div>';
+        }
+    });
+</script>
+</body>
+</html>

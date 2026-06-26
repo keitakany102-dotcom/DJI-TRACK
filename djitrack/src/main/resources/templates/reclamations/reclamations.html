@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header('Réclamations')}">
+</head>
+<body>
+<div th:replace="${#authentication.authorities.contains('ROLE_ADMIN')} ? ~{fragments/sidebar-admin :: sidebar-admin} :
+                       ${#authentication.authorities.contains('ROLE_AGENT')} ? ~{fragments/sidebar-agent :: sidebar-agent} :
+                       ~{fragments/sidebar-abonne :: sidebar-abonne}"></div>
+<!-- Dans toutes les pages -->
+<div th:insert="~{fragments/sidebar-selector :: sidebar-selector}"></div>
+<main class="main-content" id="mainContent">
+  <header class="main-header">
+    <div class="header-left">
+      <button class="btn btn-toggle-sidebar" id="toggleSidebar">
+        <i class="bi bi-list"></i>
+      </button>
+      <h4 class="page-title">Réclamations</h4>
+    </div>
+    <div class="header-right">
+                <span class="badge bg-primary me-3" th:text="${#authentication.authorities.contains('ROLE_ADMIN')} ? 'Admin' :
+                                                             ${#authentication.authorities.contains('ROLE_AGENT')} ? 'Agent' : 'Abonné'">User</span>
+      <span class="user-email" th:text="${#authentication.name}">user@djitrack.com</span>
+    </div>
+  </header>
+
+  <section class="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4>Liste des réclamations</h4>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reclamationModal">
+        <i class="bi bi-plus-circle"></i> Nouvelle réclamation
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="row g-2 mb-3">
+          <div class="col-md-4">
+            <input type="text" class="form-control" id="searchReclamation" placeholder="Rechercher...">
+          </div>
+          <div class="col-md-3">
+            <select class="form-select" id="filterReclamation">
+              <option value="all">Toutes</option>
+              <option value="EN ATTENTE">En attente</option>
+              <option value="TRAITEE">Traitées</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover" id="reclamationsTable">
+            <thead>
+            <tr>
+              <th>#ID</th>
+              <th>Objet</th>
+              <th>Description</th>
+              <th>Statut</th>
+              <th>Date dépôt</th>
+              <th>Abonné</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="reclamationsTableBody">
+            <tr><td colspan="7" class="text-center text-muted">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Modal Nouvelle Réclamation -->
+<div class="modal fade" id="reclamationModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nouvelle réclamation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="reclamationForm">
+          <div class="mb-2">
+            <label>Objet</label>
+            <input type="text" name="objet" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label>Description</label>
+            <textarea name="description" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="mb-2">
+            <label>ID Abonné</label>
+            <input type="number" name="abonneId" class="form-control" required>
+          </div>
+          <div id="reclamationFormResult"></div>
+          <button type="submit" class="btn btn-primary w-100">Envoyer</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:replace="~{fragments/scripts :: scripts}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      loadReclamations();
+  });
+
+  async function loadReclamations() {
+      try {
+          const response = await fetch('/api/reclamations');
+          const data = await response.json();
+          const tbody = document.getElementById('reclamationsTableBody');
+
+          if (!Array.isArray(data) || data.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucune réclamation</td></tr>';
+              return;
+          }
+
+          tbody.innerHTML = data.map(item => `
+              <tr>
+                  <td>${item.id || '-'}</td>
+                  <td>${item.objet || '-'}</td>
+                  <td>${item.description?.substring(0, 50) || '-'}${item.description?.length > 50 ? '...' : ''}</td>
+                  <td><span class="badge ${item.statut === 'TRAITEE' ? 'bg-success' : 'bg-warning'}">${item.statut || 'EN ATTENTE'}</span></td>
+                  <td>${item.dateDepot ? new Date(item.dateDepot).toLocaleDateString('fr-FR') : '-'}</td>
+                  <td>${item.abonne?.utilisateur?.nom || '-'}</td>
+                  <td>
+                      <button class="btn btn-sm btn-outline-success"><i class="bi bi-check-circle"></i></button>
+                      <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </td>
+              </tr>
+          `).join('');
+      } catch (error) {
+          console.error('Load reclamations error:', error);
+      }
+  }
+
+  document.getElementById('reclamationForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const data = {
+          objet: formData.get('objet'),
+          description: formData.get('description'),
+          dateDepot: new Date().toISOString().split('T')[0],
+          statut: 'EN ATTENTE',
+          abonne: { id: parseInt(formData.get('abonneId')) }
+      };
+
+      try {
+          const response = await fetch('/api/reclamations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+          });
+
+          if (response.ok) {
+              document.getElementById('reclamationFormResult').innerHTML =
+                  '<div class="alert alert-success">✅ Réclamation envoyée avec succès</div>';
+              this.reset();
+              loadReclamations();
+              setTimeout(() => {
+                  document.querySelector('#reclamationModal .btn-close')?.click();
+              }, 1500);
+          } else {
+              document.getElementById('reclamationFormResult').innerHTML =
+                  '<div class="alert alert-danger">❌ Erreur lors de l\'envoi</div>';
+          }
+      } catch (error) {
+          document.getElementById('reclamationFormResult').innerHTML =
+              '<div class="alert alert-danger">❌ Erreur de connexion</div>';
+      }
+  });
+
+  document.getElementById('filterReclamation')?.addEventListener('change', function() {
+      const filter = this.value;
+      const rows = document.querySelectorAll('#reclamationsTableBody tr');
+      rows.forEach(row => {
+          if (filter === 'all') {
+              row.style.display = '';
+          } else {
+              const statut = row.querySelector('.badge')?.textContent || '';
+              row.style.display = statut === filter ? '' : 'none';
+          }
+      });
+  });
+</script>
+</body>
+</html>
