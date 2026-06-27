@@ -1,153 +1,175 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/header :: header('Relevés')}">
+<head th:replace="~{fragments/header :: header}">
+    <title>Gestion des Relevés</title>
 </head>
 <body>
-<div th:replace="${#authentication.authorities.contains('ROLE_ADMIN')} ? ~{fragments/sidebar-admin :: sidebar-admin} : ~{fragments/sidebar-agent :: sidebar-agent}"></div>
-<!-- Dans toutes les pages -->
-<div th:insert="~{fragments/sidebar-selector :: sidebar-selector}"></div>
-<main class="main-content" id="mainContent">
-    <header class="main-header">
-        <div class="header-left">
-            <button class="btn btn-toggle-sidebar" id="toggleSidebar">
-                <i class="bi bi-list"></i>
-            </button>
-            <h4 class="page-title">Relevés</h4>
-        </div>
-        <div class="header-right">
-            <span class="badge bg-primary me-3" th:text="${#authentication.authorities.contains('ROLE_ADMIN')} ? 'Admin' : 'Agent'">Admin</span>
-            <span class="user-email" th:text="${#authentication.name}">user@djitrack.com</span>
-        </div>
-    </header>
+<div th:replace="~{fragments/sidebar :: sidebar (currentPage='releves')}"></div>
 
-    <section class="content">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4>Relevés de compteurs</h4>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#releveModal">
-                <i class="bi bi-plus-circle"></i> Nouveau relevé
-            </button>
+<div class="main-content">
+    <div class="top-header">
+        <div class="page-title">
+            <h4><i class="fas fa-tachometer-alt me-2"></i>Gestion des Relevés</h4>
+            <p>Consultez et gérez les relevés de compteurs</p>
         </div>
-
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover" id="relevesTable">
-                        <thead>
-                        <tr>
-                            <th>#ID</th>
-                            <th>Abonné</th>
-                            <th>Date relevé</th>
-                            <th>Ancienne valeur</th>
-                            <th>Nouvelle valeur</th>
-                            <th>Consommation</th>
-                        </tr>
-                        </thead>
-                        <tbody id="relevesTableBody">
-                        <tr><td colspan="6" class="text-center text-muted">Chargement...</td></tr>
-                        </tbody>
-                    </table>
+        <div class="header-actions">
+            <div class="user-profile" onclick="window.location.href='/logout'">
+                <div class="avatar">
+                    <span th:text="${#authentication.principal.username.substring(0,1).toUpperCase()}">U</span>
+                </div>
+                <div class="user-info">
+                    <div class="name" th:text="${#authentication.principal.username}">Utilisateur</div>
+                    <div class="role" th:text="${#authentication.principal.authorities}">Rôle</div>
                 </div>
             </div>
         </div>
-    </section>
-</main>
+    </div>
 
-<!-- Modal Nouveau Relevé -->
-<div class="modal fade" id="releveModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nouveau relevé</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="content-area">
+        <div class="row g-4">
+            <!-- Formulaire - Visible uniquement pour ADMIN et AGENT -->
+            <div class="col-lg-4" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+                <div class="data-card">
+                    <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Nouveau relevé</h5>
+                    <p class="text-muted small">Enregistrez un nouveau relevé de compteur pour un abonné.</p>
+                    <form id="releveForm" onsubmit="return createReleve(event)">
+                        <div class="mb-3">
+                            <label class="form-label">ID Abonné <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control form-control-custom" id="releveAbonneId" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ancienne valeur <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control form-control-custom" id="ancienneValeur" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nouvelle valeur <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control form-control-custom" id="nouvelleValeur" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date du relevé</label>
+                            <input type="date" class="form-control form-control-custom" id="releveDate">
+                        </div>
+                        <button type="submit" class="btn btn-primary-custom w-100">
+                            <i class="fas fa-save me-1"></i> Enregistrer
+                        </button>
+                    </form>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="releveForm">
-                    <div class="mb-2">
-                        <label>ID Abonné</label>
-                        <input type="number" name="abonneId" class="form-control" required>
+
+            <!-- Liste -->
+            <div class="col-lg-8" th:classappend="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')} ? '' : 'col-lg-12'">
+                <div class="data-card">
+                    <div class="card-header-custom">
+                        <h5><i class="fas fa-list me-2"></i>Historique des relevés</h5>
+                        <span class="text-muted" id="releveCount">0 relevés</span>
                     </div>
-                    <div class="mb-2">
-                        <label>Ancienne valeur</label>
-                        <input type="number" name="ancienneValeur" class="form-control" step="0.01" required>
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                            <tr>
+                                <th>Abonné</th>
+                                <th>Ancienne</th>
+                                <th>Nouvelle</th>
+                                <th>Consommation</th>
+                                <th>Date</th>
+                            </tr>
+                            </thead>
+                            <tbody id="relevesBody">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <div class="spinner-custom mx-auto"></div>
+                                    <span class="d-block mt-2">Chargement des relevés...</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="mb-2">
-                        <label>Nouvelle valeur</label>
-                        <input type="number" name="nouvelleValeur" class="form-control" step="0.01" required>
-                    </div>
-                    <div id="releveFormResult"></div>
-                    <button type="submit" class="btn btn-primary w-100">Enregistrer</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
 </div>
 
-<script th:replace="~{fragments/scripts :: scripts}"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    $(document).ready(function() {
         loadReleves();
     });
 
-    async function loadReleves() {
-        try {
-            const response = await fetch('/api/releves');
-            const data = await response.json();
-            const tbody = document.getElementById('relevesTableBody');
+    function loadReleves() {
+        $.ajax({
+            url: '/api/releves',
+            method: 'GET',
+            success: function(data) {
+                var releves = data || [];
+                $('#releveCount').text(releves.length + ' relevés');
 
-            if (!Array.isArray(data) || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Aucun relevé</td></tr>';
-                return;
+                if (releves.length === 0) {
+                    $('#relevesBody').html('<tr><td colspan="5" class="text-center text-muted">Aucun relevé trouvé</td></tr>');
+                    return;
+                }
+
+                var html = '';
+                releves.forEach(function(r) {
+                    html += '<tr>' +
+                        '<td>' + (r.abonne && r.abonne.utilisateur ? r.abonne.utilisateur.nom : 'N/A') + '</td>' +
+                        '<td>' + (r.ancienneValeur || 0) + ' m³</td>' +
+                        '<td>' + (r.nouvelleValeur || 0) + ' m³</td>' +
+                        '<td><strong>' + (r.consommation || 0) + ' m³</strong></td>' +
+                        '<td>' + (r.dateReleve || 'N/A') + '</td>' +
+                    '</tr>';
+                });
+
+                $('#relevesBody').html(html);
+            },
+            error: function(xhr) {
+                if (xhr.status === 403) {
+                    $('#relevesBody').html('<tr><td colspan="5" class="text-center text-warning">Accès non autorisé</td></tr>');
+                } else {
+                    $('#relevesBody').html('<tr><td colspan="5" class="text-center text-danger">Erreur de chargement</td></tr>');
+                }
             }
-
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td>${item.id || '-'}</td>
-                    <td>${item.abonne?.utilisateur?.nom || '-'}</td>
-                    <td>${item.dateReleve ? new Date(item.dateReleve).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td>${item.ancienneValeur || 0}</td>
-                    <td>${item.nouvelleValeur || 0}</td>
-                    <td><span class="badge bg-info">${item.consommation || 0}</span></td>
-                </tr>
-            `).join('');
-        } catch (error) {
-            console.error('Load releves error:', error);
-        }
+        });
     }
 
-    document.getElementById('releveForm')?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const data = {
-            dateReleve: new Date().toISOString().split('T')[0],
-            ancienneValeur: parseFloat(formData.get('ancienneValeur')),
-            nouvelleValeur: parseFloat(formData.get('nouvelleValeur')),
-            abonne: { id: parseInt(formData.get('abonneId')) }
+    function createReleve(event) {
+        event.preventDefault();
+
+        var abonneId = $('#releveAbonneId').val();
+        var ancienne = $('#ancienneValeur').val();
+        var nouvelle = $('#nouvelleValeur').val();
+        var date = $('#releveDate').val() || new Date().toISOString().split('T')[0];
+
+        if (!abonneId || !ancienne || !nouvelle) {
+            alert('Veuillez remplir tous les champs obligatoires');
+            return false;
+        }
+
+        var data = {
+            abonne: { id: parseInt(abonneId) },
+            ancienneValeur: parseFloat(ancienne),
+            nouvelleValeur: parseFloat(nouvelle),
+            dateReleve: date
         };
 
-        try {
-            const response = await fetch('/api/releves', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if (response.ok) {
-                document.getElementById('releveFormResult').innerHTML =
-                    '<div class="alert alert-success">✅ Relevé enregistré avec succès</div>';
-                this.reset();
+        $.ajax({
+            url: '/api/releves',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function() {
+                alert('Relevé enregistré avec succès');
+                $('#releveForm')[0].reset();
                 loadReleves();
-                setTimeout(() => {
-                    document.querySelector('#releveModal .btn-close')?.click();
-                }, 1500);
-            } else {
-                document.getElementById('releveFormResult').innerHTML =
-                    '<div class="alert alert-danger">❌ Erreur lors de l\'enregistrement</div>';
+            },
+            error: function(xhr) {
+                alert('Erreur: ' + (xhr.responseText || ''));
             }
-        } catch (error) {
-            document.getElementById('releveFormResult').innerHTML =
-                '<div class="alert alert-danger">❌ Erreur de connexion</div>';
-        }
-    });
+        });
+
+        return false;
+    }
 </script>
 </body>
 </html>

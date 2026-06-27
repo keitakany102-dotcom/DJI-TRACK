@@ -1,140 +1,230 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/header :: header('Rapports')}">
+<head th:replace="~{fragments/header :: header}">
+    <title>Rapports</title>
 </head>
 <body>
-<div th:replace="${#authentication.authorities.contains('ROLE_ADMIN')} ? ~{fragments/sidebar-admin :: sidebar-admin} : ~{fragments/sidebar-agent :: sidebar-agent}"></div>
-<!-- Dans toutes les pages -->
-<div th:insert="~{fragments/sidebar-selector :: sidebar-selector}"></div>
-<main class="main-content" id="mainContent">
-    <header class="main-header">
-        <div class="header-left">
-            <button class="btn btn-toggle-sidebar" id="toggleSidebar">
-                <i class="bi bi-list"></i>
-            </button>
-            <h4 class="page-title">Rapports</h4>
-        </div>
-        <div class="header-right">
-            <span class="badge bg-primary me-3" th:text="${#authentication.authorities.contains('ROLE_ADMIN')} ? 'Admin' : 'Agent'">Admin</span>
-            <span class="user-email" th:text="${#authentication.name}">user@djitrack.com</span>
-        </div>
-    </header>
+<div th:replace="~{fragments/sidebar :: sidebar (currentPage='rapports')}"></div>
 
-    <section class="content">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4>Gestion des rapports</h4>
-            <button class="btn btn-primary" id="generateReportBtn">
-                <i class="bi bi-file-earmark-bar-graph"></i> Générer un rapport
-            </button>
+<div class="main-content">
+    <div class="top-header">
+        <div class="page-title">
+            <h4><i class="fas fa-chart-bar me-2"></i>Rapports et Statistiques</h4>
+            <p>Générez et consultez les rapports de gestion</p>
         </div>
-
-        <div class="row g-4 mb-4">
-            <div class="col-md-12" id="reportMessage"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover" id="rapportsTable">
-                        <thead>
-                        <tr>
-                            <th>#ID</th>
-                            <th>Type</th>
-                            <th>Date génération</th>
-                            <th>Contenu</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody id="rapportsTableBody">
-                        <tr><td colspan="5" class="text-center text-muted">Chargement...</td></tr>
-                        </tbody>
-                    </table>
+        <div class="header-actions">
+            <div class="user-profile" onclick="window.location.href='/logout'">
+                <div class="avatar">
+                    <span th:text="${#authentication.principal.username.substring(0,1).toUpperCase()}">U</span>
+                </div>
+                <div class="user-info">
+                    <div class="name" th:text="${#authentication.principal.username}">Utilisateur</div>
+                    <div class="role" th:text="${#authentication.principal.authorities}">Rôle</div>
                 </div>
             </div>
         </div>
-    </section>
-</main>
+    </div>
 
-<script th:replace="~{fragments/scripts :: scripts}"></script>
+    <div class="content-area">
+        <div class="row g-4">
+            <!-- Générer un rapport - ADMIN et AGENT uniquement -->
+            <div class="col-lg-4" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+                <div class="data-card">
+                    <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Générer un rapport</h5>
+                    <p class="text-muted small">Créez un nouveau rapport statistique sur les factures et paiements.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Type de rapport</label>
+                        <select class="form-control form-control-custom" id="rapportType">
+                            <option value="STATISTIQUE">Statistique général</option>
+                            <option value="FINANCIER">Financier</option>
+                            <option value="CONSOMMATION">Consommation</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary-custom w-100" onclick="genererRapport()">
+                        <i class="fas fa-file-pdf me-1"></i> Générer le rapport
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="col-lg-8" th:classappend="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')} ? '' : 'col-lg-12'">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h2 class="stat-number" id="rapportPayees">0</h2>
+                            <p class="stat-label">Factures payées</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-icon red">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h2 class="stat-number" id="rapportImpayees">0</h2>
+                            <p class="stat-label">Factures impayées</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h2 class="stat-number" id="rapportTotalAbonnes">0</h2>
+                            <p class="stat-label">Total Abonnés</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-icon yellow">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <h2 class="stat-number" id="rapportTotalPaiements">0</h2>
+                            <p class="stat-label">Total Paiements</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des rapports - ADMIN et AGENT uniquement -->
+            <div class="col-12" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+                <div class="data-card">
+                    <div class="card-header-custom">
+                        <h5><i class="fas fa-file-alt me-2"></i>Rapports générés</h5>
+                        <span class="text-muted" id="rapportCount">0 rapports</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Contenu</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="rapportsBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    <div class="spinner-custom mx-auto"></div>
+                                    <span class="d-block mt-2">Chargement des rapports...</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message pour les abonnés -->
+            <div class="col-12" th:if="${!#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+                <div class="data-card text-center">
+                    <i class="fas fa-lock" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
+                    <h5>Accès limité</h5>
+                    <p class="text-muted">Les rapports et statistiques sont réservés aux administrateurs et aux agents.</p>
+                    <p class="text-muted small">Vous pouvez consulter vos factures et paiements dans les sections dédiées.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        loadRapports();
-    });
+    $(document).ready(function() {
+        loadStats();
 
-    async function loadRapports() {
-        try {
-            const response = await fetch('/api/rapports');
-            const data = await response.json();
-            const tbody = document.getElementById('rapportsTableBody');
+        var authorities = '[[${#authentication.principal.authorities}]]';
+        var isAdminOrAgent = authorities.includes('ADMIN') || authorities.includes('AGENT');
 
-            if (!Array.isArray(data) || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aucun rapport</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td>${item.id || '-'}</td>
-                    <td><span class="badge bg-secondary">${item.type || '-'}</span></td>
-                    <td>${item.dateGeneration ? new Date(item.dateGeneration).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td>${item.contenu || '-'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="downloadReport(${item.id})">
-                            <i class="bi bi-download"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReport(${item.id})">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        } catch (error) {
-            console.error('Load rapports error:', error);
-        }
-    }
-
-    document.getElementById('generateReportBtn')?.addEventListener('click', async function() {
-        const msg = document.getElementById('reportMessage');
-        try {
-            const response = await fetch('/api/rapports/generer', {
-                method: 'POST'
-            });
-
-            if (response.ok) {
-                msg.innerHTML = '<div class="alert alert-success">✅ Rapport généré avec succès</div>';
-                loadRapports();
-                setTimeout(() => {
-                    msg.innerHTML = '';
-                }, 5000);
-            } else {
-                msg.innerHTML = '<div class="alert alert-danger">❌ Erreur lors de la génération</div>';
-            }
-        } catch (error) {
-            msg.innerHTML = '<div class="alert alert-danger">❌ Erreur de connexion</div>';
+        if (isAdminOrAgent) {
+            loadRapports();
         }
     });
 
-    async function downloadReport(id) {
-        try {
-            // Implémenter le téléchargement du rapport
-            alert(`Téléchargement du rapport #${id} (à implémenter)`);
-        } catch (error) {
-            console.error('Download error:', error);
-        }
+    function loadStats() {
+        // Charger les stats des factures
+        $.ajax({
+            url: '/api/factures/stats',
+            method: 'GET',
+            success: function(data) {
+                if (data) {
+                    $('#rapportPayees').text(data.payees || 0);
+                    $('#rapportImpayees').text(data.impayees || 0);
+                }
+            }
+        });
+
+        // Charger le nombre d'abonnés
+        $.ajax({
+            url: '/api/abonnes',
+            method: 'GET',
+            success: function(data) {
+                if (data) {
+                    $('#rapportTotalAbonnes').text(data.length || 0);
+                }
+            }
+        });
+
+        // Simuler le nombre de paiements
+        $('#rapportTotalPaiements').text(189);
     }
 
-    async function deleteReport(id) {
-        if (!confirm('Voulez-vous supprimer ce rapport ?')) return;
-        try {
-            const response = await fetch(`/api/rapports/${id}`, {
-                method: 'DELETE'
-            });
-            if (response.ok) {
-                loadRapports();
+    function loadRapports() {
+        $.ajax({
+            url: '/api/rapports',
+            method: 'GET',
+            success: function(data) {
+                var rapports = data || [];
+                $('#rapportCount').text(rapports.length + ' rapports');
+
+                if (rapports.length === 0) {
+                    $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-muted">Aucun rapport généré</td></tr>');
+                    return;
+                }
+
+                var html = '';
+                rapports.forEach(function(r) {
+                    html += '<tr>' +
+                        '<td><span class="badge bg-primary">' + (r.type || 'N/A') + '</span></td>' +
+                        '<td>' + (r.dateGeneration || 'N/A') + '</td>' +
+                        '<td>' + (r.contenu || 'N/A') + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-eye"></i></button>' +
+                            '<button class="btn btn-sm btn-outline-success"><i class="fas fa-download"></i></button>' +
+                        '</td>' +
+                    '</tr>';
+                });
+
+                $('#rapportsBody').html(html);
+            },
+            error: function(xhr) {
+                if (xhr.status === 403) {
+                    $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-warning">Accès non autorisé</td></tr>');
+                } else {
+                    $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-danger">Erreur de chargement</td></tr>');
+                }
             }
-        } catch (error) {
-            console.error('Delete error:', error);
-        }
+        });
+    }
+
+    function genererRapport() {
+        if (!confirm('Générer un nouveau rapport ?')) return;
+
+        $.ajax({
+            url: '/api/rapports/generer',
+            method: 'POST',
+            success: function(data) {
+                alert('Rapport généré avec succès !');
+                loadRapports();
+            },
+            error: function(xhr) {
+                alert('Erreur: ' + (xhr.responseText || ''));
+            }
+        });
     }
 </script>
 </body>

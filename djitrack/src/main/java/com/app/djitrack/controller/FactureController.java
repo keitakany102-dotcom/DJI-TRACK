@@ -5,6 +5,7 @@ import com.app.djitrack.service.FactureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,13 +17,13 @@ public class FactureController {
 
     private final FactureService factureService;
 
-    // ==================== GET ALL ====================
+    // ==================== GET ALL (tous les rôles authentifiés) ====================
     @GetMapping
     public ResponseEntity<List<Facture>> findAll() {
         return ResponseEntity.ok(factureService.findAll());
     }
 
-    // ==================== GET BY ID ====================
+    // ==================== GET BY ID (tous les rôles authentifiés) ====================
     @GetMapping("/{id}")
     public ResponseEntity<Facture> getOne(@PathVariable Long id) {
         return factureService.getById(id)
@@ -30,11 +31,17 @@ public class FactureController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ==================== CREATE ====================
+    // ==================== GET BY ABONNE (abonné voit ses propres factures) ====================
+    @GetMapping("/abonne/{abonneId}")
+    public ResponseEntity<List<Facture>> getByAbonne(@PathVariable Long abonneId) {
+        return ResponseEntity.ok(factureService.findByAbonneId(abonneId));
+    }
+
+    // ==================== CREATE (Admin et Agent seulement) ====================
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     public ResponseEntity<?> create(@RequestBody Facture facture) {
         try {
-            // Vérification des données obligatoires
             if (facture.getNumero() == null || facture.getNumero().isEmpty()) {
                 return ResponseEntity.badRequest().body("Le numéro de facture est obligatoire");
             }
@@ -52,19 +59,16 @@ public class FactureController {
         }
     }
 
-    // ==================== UPDATE ====================
+    // ==================== UPDATE (Admin et Agent seulement) ====================
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Facture facture) {
         try {
-            // Vérifier si la facture existe
             if (factureService.getById(id).isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-
-            // Mettre à jour l'ID
             facture.setId(id);
 
-            // Vérification des données
             if (facture.getNumero() == null || facture.getNumero().isEmpty()) {
                 return ResponseEntity.badRequest().body("Le numéro de facture est obligatoire");
             }
@@ -82,15 +86,14 @@ public class FactureController {
         }
     }
 
-    // ==================== DELETE ====================
+    // ==================== DELETE (Admin seulement) ====================
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
-            // Vérifier si la facture existe
             if (factureService.getById(id).isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
-
             factureService.deleteById(id);
             return ResponseEntity.ok("Facture supprimée avec succès");
         } catch (Exception e) {
@@ -102,12 +105,6 @@ public class FactureController {
     @GetMapping("/statut/{statut}")
     public ResponseEntity<List<Facture>> getByStatut(@PathVariable String statut) {
         return ResponseEntity.ok(factureService.findByStatut(statut));
-    }
-
-    // ==================== GET BY ABONNE ====================
-    @GetMapping("/abonne/{abonneId}")
-    public ResponseEntity<List<Facture>> getByAbonne(@PathVariable Long abonneId) {
-        return ResponseEntity.ok(factureService.findByAbonneId(abonneId));
     }
 
     // ==================== GET BY DATE ====================
@@ -131,7 +128,6 @@ public class FactureController {
         }
     }
 
-    // ==================== STATS DTO ====================
     private static class StatsResponse {
         public long total;
         public long payees;

@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/djitrack.iml" filepath="$PROJECT_DIR$/.idea/djitrack.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/DJI-TRACK.iml" filepath="$PROJECT_DIR$/.idea/DJI-TRACK.iml" />
+      <module fileurl="file://$PROJECT_DIR$/djitrack/djitrack.iml" filepath="$PROJECT_DIR$/djitrack/djitrack.iml" />
     </modules>
   </component>
 </project>

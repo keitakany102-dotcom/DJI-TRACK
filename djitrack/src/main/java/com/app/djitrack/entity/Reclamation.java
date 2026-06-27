@@ -21,11 +21,19 @@ public class Reclamation {
 
     private String objet;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    private String statut;
+    private String statut; // EN ATTENTE, TRAITEE, REJETEE
 
     private LocalDate dateDepot;
+
+    @Column(columnDefinition = "TEXT")
+    private String reponse; // Réponse de l'agent/admin
+
+    private String repondantNom; // Nom de l'agent/admin qui a répondu
+
+    private LocalDate dateReponse;
 
     @ManyToOne
     private Abonne abonne;

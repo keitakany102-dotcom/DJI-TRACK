@@ -7,26 +7,63 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/admin")
-@RequiredArgsConstructor
+@Controller
+@RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
 public class AdminController {
 
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // ==================== DASHBOARD ====================
+    // ==================== PAGES HTML ====================
+
     @GetMapping("/dashboard")
-    public ResponseEntity<?> dashboard() {
+    public String dashboard(Model model) {
+        model.addAttribute("totalUsers", utilisateurRepository.count());
+        model.addAttribute("admins", utilisateurRepository.countByRole(Role.ROLE_ADMIN));
+        model.addAttribute("agents", utilisateurRepository.countByRole(Role.ROLE_AGENT));
+        model.addAttribute("abonnes", utilisateurRepository.countByRole(Role.ROLE_ABONNE));
+        return "admin/dashboard";
+    }
+
+    @GetMapping("/users")
+    public String users(Model model) {
+        model.addAttribute("users", utilisateurRepository.findAll());
+        model.addAttribute("roles", Role.values());
+        return "admin/users";
+    }
+
+    @GetMapping("/users/create")
+    public String createUserForm(Model model) {
+        model.addAttribute("user", new Utilisateur());
+        model.addAttribute("roles", Role.values());
+        return "admin/user-form";
+    }
+
+    @GetMapping("/users/edit/{id}")
+    public String editUserForm(@PathVariable Long id, Model model) {
+        Utilisateur user = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        model.addAttribute("user", user);
+        model.addAttribute("roles", Role.values());
+        return "admin/user-form";
+    }
+
+    // ==================== API REST ====================
+
+    @GetMapping("/api/dashboard")
+    @ResponseBody
+    public ResponseEntity<?> dashboardApi() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Dashboard Administrateur");
         response.put("totalUsers", utilisateurRepository.count());
         response.put("admins", utilisateurRepository.countByRole(Role.ROLE_ADMIN));
         response.put("agents", utilisateurRepository.countByRole(Role.ROLE_AGENT));
@@ -34,31 +71,22 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    // ==================== LISTE DES UTILISATEURS ====================
-    @GetMapping("/users")
+    @GetMapping("/api/users")
+    @ResponseBody
     public ResponseEntity<List<Utilisateur>> getAllUsers() {
         return ResponseEntity.ok(utilisateurRepository.findAll());
     }
 
-    @GetMapping("/users/{id}")
+    @GetMapping("/api/users/{id}")
+    @ResponseBody
     public ResponseEntity<Utilisateur> getUserById(@PathVariable Long id) {
         return utilisateurRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/users/role/{role}")
-    public ResponseEntity<List<Utilisateur>> getUsersByRole(@PathVariable String role) {
-        try {
-            Role roleEnum = Role.valueOf("ROLE_" + role.toUpperCase());
-            return ResponseEntity.ok(utilisateurRepository.findByRole(roleEnum));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    // ==================== CRÉATION D'UTILISATEURS ====================
-    @PostMapping("/users")
+    @PostMapping("/api/users")
+    @ResponseBody
     public ResponseEntity<?> createUser(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         String password = request.get("password");
@@ -66,21 +94,14 @@ public class AdminController {
         String telephone = request.get("telephone");
         String roleStr = request.get("role");
 
-        // Vérification des champs obligatoires
         if (email == null || password == null || nom == null || roleStr == null) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Tous les champs sont obligatoires: email, password, nom, role"
-            ));
+            return ResponseEntity.badRequest().body(Map.of("error", "Tous les champs sont obligatoires"));
         }
 
-        // Vérification si l'email existe déjà
         if (utilisateurRepository.findByEmail(email).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Cet email existe déjà"
-            ));
+            return ResponseEntity.badRequest().body(Map.of("error", "Cet email existe déjà"));
         }
 
-        // Validation du rôle
         Role role;
         try {
             String roleName = roleStr.toUpperCase();
@@ -89,12 +110,9 @@ public class AdminController {
             }
             role = Role.valueOf(roleName);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Rôle invalide. Utilisez: ADMIN, AGENT ou ABONNE"
-            ));
+            return ResponseEntity.badRequest().body(Map.of("error", "Rôle invalide"));
         }
 
-        // Création de l'utilisateur
         Utilisateur user = Utilisateur.builder()
                 .nom(nom)
                 .email(email)
@@ -105,42 +123,14 @@ public class AdminController {
 
         Utilisateur saved = utilisateurRepository.save(user);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Utilisateur créé avec succès");
-        response.put("user", Map.of(
-                "id", saved.getId(),
-                "nom", saved.getNom(),
-                "email", saved.getEmail(),
-                "telephone", saved.getTelephone(),
-                "role", saved.getRole().name()
+        return ResponseEntity.ok(Map.of(
+                "message", "Utilisateur créé avec succès",
+                "user", saved
         ));
-
-        return ResponseEntity.ok(response);
     }
 
-    // ==================== CRÉATION D'UN ADMIN ====================
-    @PostMapping("/create-admin")
-    public ResponseEntity<?> createAdmin(@RequestBody Map<String, String> request) {
-        request.put("role", "ADMIN");
-        return createUser(request);
-    }
-
-    // ==================== CRÉATION D'UN AGENT ====================
-    @PostMapping("/create-agent")
-    public ResponseEntity<?> createAgent(@RequestBody Map<String, String> request) {
-        request.put("role", "AGENT");
-        return createUser(request);
-    }
-
-    // ==================== CRÉATION D'UN ABONNÉ ====================
-    @PostMapping("/create-abonne")
-    public ResponseEntity<?> createAbonne(@RequestBody Map<String, String> request) {
-        request.put("role", "ABONNE");
-        return createUser(request);
-    }
-
-    // ==================== MISE À JOUR D'UN UTILISATEUR ====================
-    @PutMapping("/users/{id}")
+    @PutMapping("/api/users/{id}")
+    @ResponseBody
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, String> request) {
         Utilisateur user = utilisateurRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
@@ -162,50 +152,29 @@ public class AdminController {
                 }
                 user.setRole(Role.valueOf(roleName));
             } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Rôle invalide. Utilisez: ADMIN, AGENT ou ABONNE"
-                ));
+                return ResponseEntity.badRequest().body(Map.of("error", "Rôle invalide"));
             }
         }
 
         Utilisateur updated = utilisateurRepository.save(user);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Utilisateur mis à jour avec succès");
-        response.put("user", updated);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of(
+                "message", "Utilisateur mis à jour avec succès",
+                "user", updated
+        ));
     }
 
-    // ==================== SUPPRESSION D'UN UTILISATEUR ====================
-    @DeleteMapping("/users/{id}")
+    @DeleteMapping("/api/users/{id}")
+    @ResponseBody
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         if (!utilisateurRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-
         utilisateurRepository.deleteById(id);
-
-        return ResponseEntity.ok(Map.of(
-                "message", "Utilisateur supprimé avec succès",
-                "id", id
-        ));
+        return ResponseEntity.ok(Map.of("message", "Utilisateur supprimé avec succès"));
     }
 
-    // ==================== STATISTIQUES ====================
-    @GetMapping("/stats")
-    public ResponseEntity<?> getStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalUsers", utilisateurRepository.count());
-        stats.put("admins", utilisateurRepository.countByRole(Role.ROLE_ADMIN));
-        stats.put("agents", utilisateurRepository.countByRole(Role.ROLE_AGENT));
-        stats.put("abonnes", utilisateurRepository.countByRole(Role.ROLE_ABONNE));
-
-        return ResponseEntity.ok(stats);
-    }
-
-    // ==================== RECHERCHE D'UTILISATEURS ====================
-    @GetMapping("/users/search")
+    @GetMapping("/api/users/search")
+    @ResponseBody
     public ResponseEntity<List<Utilisateur>> searchUsers(@RequestParam String keyword) {
         return ResponseEntity.ok(utilisateurRepository.findByNomContainingOrEmailContaining(keyword, keyword));
     }

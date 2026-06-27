@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header}">
+  <title th:text="${user != null && user.id != null} ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'">Gestion Utilisateur</title>
+</head>
+<body>
+<div th:replace="~{fragments/sidebar :: sidebar (currentPage='admin-users')}"></div>
+
+<div class="main-content">
+  <div class="top-header">
+    <div class="page-title">
+      <h4 th:text="${user != null && user.id != null} ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'">
+        <i class="fas fa-user-cog me-2"></i>Gestion utilisateur
+      </h4>
+      <p th:text="${user != null && user.id != null} ? 'Modification des informations de ' + ${user.nom} : 'Création d\'un nouvel utilisateur'">Formulaire</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline-secondary" onclick="window.location.href='/admin/users'">
+        <i class="fas fa-arrow-left me-1"></i> Retour
+      </button>
+      <div class="user-profile" onclick="window.location.href='/logout'">
+        <div class="avatar">
+          <span th:text="${#authentication.principal.username.substring(0,1).toUpperCase()}">A</span>
+        </div>
+        <div class="user-info">
+          <div class="name" th:text="${#authentication.principal.username}">Admin</div>
+          <div class="role">Administrateur</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="data-card">
+          <form id="userForm" onsubmit="return saveUser(event)">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="form-label">Nom complet <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-custom" id="nom"
+                       th:value="${user != null ? user.nom : ''}" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control form-control-custom" id="email"
+                       th:value="${user != null ? user.email : ''}" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Téléphone</label>
+                <input type="tel" class="form-control form-control-custom" id="telephone"
+                       th:value="${user != null ? user.telephone : ''}">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Mot de passe <span th:if="${user == null || user.id == null}" class="text-danger">*</span></label>
+                <input type="password" class="form-control form-control-custom" id="password"
+                       th:required="${user == null || user.id == null}" placeholder="Minimum 6 caractères">
+                <small class="text-muted" th:if="${user != null && user.id != null}">Laissez vide pour conserver le mot de passe actuel</small>
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label">Rôle <span class="text-danger">*</span></label>
+                <select class="form-control form-control-custom" id="role" required>
+                  <option value="ROLE_ABONNE" th:selected="${user != null && user.role == 'ROLE_ABONNE'}">Abonné</option>
+                  <option value="ROLE_AGENT" th:selected="${user != null && user.role == 'ROLE_AGENT'}">Agent</option>
+                  <option value="ROLE_ADMIN" th:selected="${user != null && user.role == 'ROLE_ADMIN'}">Administrateur</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <hr>
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary-custom">
+                    <i class="fas fa-save me-1"></i>
+                    <span th:text="${user != null && user.id != null} ? 'Mettre à jour' : 'Créer l\'utilisateur'">Enregistrer</span>
+                  </button>
+                  <button type="reset" class="btn btn-outline-secondary">
+                    <i class="fas fa-undo me-1"></i> Réinitialiser
+                  </button>
+                  <button type="button" class="btn btn-outline-danger ms-auto"
+                          onclick="window.location.href='/admin/users'">
+                    <i class="fas fa-times me-1"></i> Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div th:replace="~{fragments/footer :: footer}"></div>
+</div>
+
+<script>
+  var userId = '[[${user != null ? user.id : null}]]';
+  userId = userId && userId !== 'null' ? parseInt(userId) : null;
+
+  function saveUser(event) {
+      event.preventDefault();
+
+      var nom = $('#nom').val().trim();
+      var email = $('#email').val().trim();
+      var telephone = $('#telephone').val().trim();
+      var password = $('#password').val();
+      var role = $('#role').val();
+
+      if (!nom || !email || !role) {
+          alert('Veuillez remplir tous les champs obligatoires');
+          return false;
+      }
+
+      var data = {
+          nom: nom,
+          email: email,
+          telephone: telephone,
+          role: role
+      };
+
+      if (password) {
+          data.password = password;
+      }
+
+      var url = userId ? '/admin/api/users/' + userId : '/admin/api/users';
+      var method = userId ? 'PUT' : 'POST';
+
+      $.ajax({
+          url: url,
+          method: method,
+          contentType: 'application/json',
+          data: JSON.stringify(data),
+          success: function(response) {
+              alert(response.message || 'Opération réussie');
+              window.location.href = '/admin/users';
+          },
+          error: function(xhr) {
+              var msg = xhr.responseText;
+              try {
+                  var json = JSON.parse(msg);
+                  msg = json.error || json.message || msg;
+              } catch(e) {}
+              alert('Erreur: ' + msg);
+          }
+      });
+
+      return false;
+  }
+</script>
+</body>
+</html>

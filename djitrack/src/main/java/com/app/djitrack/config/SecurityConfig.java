@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -70,9 +72,7 @@ public class SecurityConfig {
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                                 Authentication authentication) throws IOException, ServletException {
-
                 String redirectUrl = "/dashboard/abonne";
-
                 for (GrantedAuthority authority : authentication.getAuthorities()) {
                     String role = authority.getAuthority();
                     if (role.equals("ROLE_ADMIN")) {
@@ -83,7 +83,6 @@ public class SecurityConfig {
                         break;
                     }
                 }
-
                 response.sendRedirect(redirectUrl);
             }
         };
@@ -91,65 +90,41 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                // IMPORTANT: NE PAS mettre sessionManagement stateless
+                // Les sessions sont nécessaires pour que la navigation post-login fonctionne
                 .authorizeHttpRequests(auth -> auth
-                        // Pages publiques
+                        // Ressources et pages publiques
                         .requestMatchers(
-                                "/",
-                                "/login",
-                                "/register",
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/webjars/**",
-                                "/favicon.ico"
+                                "/", "/login", "/register",
+                                "/css/**", "/js/**", "/images/**",
+                                "/webjars/**", "/favicon.ico"
                         ).permitAll()
 
-                        // API publiques
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/api/auth/**"
-                        ).permitAll()
+                        // API d'authentification publiques
+                        .requestMatchers("/api/auth/**").permitAll()
 
-                        // Pages protégées
-                        .requestMatchers("/dashboard/**").authenticated()
-                        .requestMatchers("/abonnes/**").authenticated()
-                        .requestMatchers("/factures/**").authenticated()
-                        .requestMatchers("/releves/**").authenticated()
-                        .requestMatchers("/paiements/**").authenticated()
-                        .requestMatchers("/reclamations/**").authenticated()
-                        .requestMatchers("/rapports/**").authenticated()
-
-                        // API protégées
-                        .requestMatchers("/api/factures/**").authenticated()
-                        .requestMatchers("/api/abonnes/**").authenticated()
-                        .requestMatchers("/api/releves/**").authenticated()
-                        .requestMatchers("/api/paiements/**").authenticated()
-                        .requestMatchers("/api/reclamations/**").authenticated()
-                        .requestMatchers("/api/rapports/**").authenticated()
-
-                        // Admin seulement
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-
+                        // Toutes les autres requêtes nécessitent une authentification
                         .anyRequest().authenticated()
                 )
+                // Garder le formLogin pour la compatibilité (cas où Spring gère le form)
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .loginProcessingUrl("/login")  // URL pour le POST du formulaire
+                        .loginProcessingUrl("/login-form") // URL différente pour éviter conflit avec notre API
                         .successHandler(authenticationSuccessHandler())
                         .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
                         .permitAll()
                 )
                 .authenticationProvider(authenticationProvider())
+                // Le filtre JWT gère les appels API avec header Authorization
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

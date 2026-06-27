@@ -20,17 +20,33 @@ public class AuthService {
     private final JwtService jwtService;
 
     public AuthResponse register(RegisterRequest request) {
+        // Vérifier si l'email existe déjà
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Cet email est déjà utilisé");
+        }
+
+        // Déterminer le rôle (par défaut ABONNE)
+        Role role = Role.ROLE_ABONNE;
+        if (request.getRole() != null) {
+            try {
+                role = Role.valueOf(request.getRole().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Rôle invalide → on garde ABONNE
+                role = Role.ROLE_ABONNE;
+            }
+        }
+
         Utilisateur user = Utilisateur.builder()
                 .nom(request.getNom())
                 .email(request.getEmail())
                 .telephone(request.getTelephone())
                 .motDePasse(encoder.encode(request.getPassword()))
-                .role(Role.ROLE_ABONNE)
+                .role(role)
                 .build();
 
         repository.save(user);
-        String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse(token);
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        return new AuthResponse(token, user.getRole().name(), user.getEmail(), user.getNom());
     }
 
     public AuthResponse authenticate(LoginRequest request) {
@@ -41,7 +57,7 @@ public class AuthService {
             throw new RuntimeException("Email ou mot de passe incorrect");
         }
 
-        String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse(token);
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        return new AuthResponse(token, user.getRole().name(), user.getEmail(), user.getNom());
     }
 }

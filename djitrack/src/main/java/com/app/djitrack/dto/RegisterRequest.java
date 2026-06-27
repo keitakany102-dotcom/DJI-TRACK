@@ -9,5 +9,6 @@ public class RegisterRequest {
     private String email;
     private String telephone;
     private String password;
+    private String role; // ROLE_ADMIN, ROLE_AGENT, ROLE_ABONNE
 
 }
