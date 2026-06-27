@@ -10,9 +10,7 @@
     <div class="top-header">
         <div class="page-title">
             <h4><i class="fas fa-credit-card me-2"></i>Gestion des Paiements</h4>
-            <p th:text="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')} ? 'Consultez tous les paiements effectués' : 'Consultez vos paiements'">
-                Gestion des paiements
-            </p>
+            <p>Consultez tous les paiements effectués par les abonnés</p>
         </div>
         <div class="header-actions">
             <div class="user-profile" onclick="window.location.href='/logout'">
@@ -28,8 +26,8 @@
     </div>
 
     <div class="content-area">
-        <!-- Stats - ADMIN et AGENT uniquement -->
-        <div class="row g-4 mb-4" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+        <!-- Stats -->
+        <div class="row g-4 mb-4">
             <div class="col-md-3">
                 <div class="stat-card">
                     <div class="stat-icon blue">
@@ -68,78 +66,41 @@
             </div>
         </div>
 
-        <!-- Formulaire de paiement - visible pour tous -->
-        <div class="row g-4">
-            <div class="col-lg-5">
-                <div class="data-card">
-                    <h5 class="mb-4"><i class="fas fa-credit-card me-2"></i>Payer une facture</h5>
-                    <p class="text-muted small">Effectuez votre paiement en toute sécurité via Orange Money ou Moov Money.</p>
-                    <form id="paiementForm" onsubmit="return effectuerPaiement(event)">
-                        <div class="mb-3">
-                            <label class="form-label">ID de la facture <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control form-control-custom" id="factureId"
-                                   th:value="${param.factureId}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Montant <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control form-control-custom" id="montant"
-                                   step="0.01" required>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Mode de paiement <span class="text-danger">*</span></label>
-                            <div class="d-flex gap-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="mode" id="orangeMoney" value="ORANGE" checked>
-                                    <label class="form-check-label" for="orangeMoney">
-                                        <i class="fas fa-phone text-warning me-1"></i> Orange Money
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="mode" id="moovMoney" value="MOOV">
-                                    <label class="form-check-label" for="moovMoney">
-                                        <i class="fas fa-phone text-success me-1"></i> Moov Money
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary-custom w-100">
-                            <i class="fas fa-check-circle me-1"></i> Effectuer le paiement
-                        </button>
-                    </form>
-                </div>
-            </div>
+        <!-- Actions -->
+        <div class="mb-4">
+            <button class="btn btn-outline-secondary" onclick="loadPaiements()">
+                <i class="fas fa-sync-alt me-1"></i> Rafraîchir
+            </button>
+        </div>
 
-            <!-- Historique -->
-            <div class="col-lg-7">
-                <div class="data-card">
-                    <div class="card-header-custom">
-                        <h5><i class="fas fa-history me-2"></i>Historique des paiements</h5>
-                        <span class="text-muted" id="paiementCount">0 paiements</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-custom">
-                            <thead>
-                            <tr>
-                                <th>Référence</th>
-                                <th>Facture</th>
-                                <th>Abonné</th>
-                                <th>Montant</th>
-                                <th>Mode</th>
-                                <th>Date</th>
-                                <th>Statut</th>
-                            </tr>
-                            </thead>
-                            <tbody id="paiementsBody">
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">
-                                    <div class="spinner-custom mx-auto"></div>
-                                    <span class="d-block mt-2">Chargement des paiements...</span>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- Historique des paiements -->
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-history me-2"></i>Historique des paiements</h5>
+                <span class="text-muted" id="paiementCount">0 paiements</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Facture</th>
+                        <th>Abonné</th>
+                        <th>Montant</th>
+                        <th>Mode</th>
+                        <th>Date</th>
+                        <th>Statut</th>
+                    </tr>
+                    </thead>
+                    <tbody id="paiementsBody">
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            <div class="spinner-custom mx-auto"></div>
+                            <span class="d-block mt-2">Chargement des paiements...</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -148,48 +109,68 @@
 </div>
 
 <script>
-    var isAdminOrAgent = false;
-
     $(document).ready(function() {
-        var authorities = '[[${#authentication.principal.authorities}]]';
-        isAdminOrAgent = authorities.includes('ADMIN') || authorities.includes('AGENT');
-
-        var factureId = new URLSearchParams(window.location.search).get('factureId');
-        if (factureId) {
-            $('#factureId').val(factureId);
-            $.ajax({
-                url: '/api/factures/' + factureId,
-                method: 'GET',
-                success: function(data) {
-                    if (data && data.montantTotal) {
-                        $('#montant').val(data.montantTotal);
-                    }
-                }
-            });
-        }
-
+        console.log('Page paiements chargée');
         loadPaiements();
-        if (isAdminOrAgent) {
-            loadPaiementStats();
-        }
+        loadPaiementStats();
     });
 
     function loadPaiements() {
-        var url = isAdminOrAgent ? '/api/paiements' : '/api/paiements/abonne/1';
+        console.log('Chargement des paiements...');
 
+        $('#paiementsBody').html('<tr><td colspan="7" class="text-center text-muted"><div class="spinner-custom mx-auto"></div><span class="d-block mt-2">Chargement...</span></td></tr>');
+
+        // Essayer d'abord l'API des paiements
         $.ajax({
-            url: url,
+            url: '/api/paiements',
             method: 'GET',
             success: function(data) {
+                console.log('Paiements reçus:', data);
                 var paiements = data || [];
                 displayPaiements(paiements);
+                updatePaiementStats(paiements);
             },
             error: function(xhr) {
-                if (xhr.status === 403) {
-                    $('#paiementsBody').html('<tr><td colspan="7" class="text-center text-warning">Accès non autorisé</td></tr>');
-                } else {
-                    $('#paiementsBody').html('<tr><td colspan="7" class="text-center text-danger">Erreur de chargement</td></tr>');
+                console.warn('API paiements non disponible, fallback sur les factures');
+                // Fallback: utiliser les factures payées
+                loadPaiementsFromFactures();
+            }
+        });
+    }
+
+    function loadPaiementsFromFactures() {
+        $.ajax({
+            url: '/api/factures',
+            method: 'GET',
+            success: function(data) {
+                console.log('Factures reçues pour paiements:', data);
+                var paiements = [];
+                if (data && data.length > 0) {
+                    data.forEach(function(facture) {
+                        if (facture.statut === 'PAYEE') {
+                            paiements.push({
+                                reference: 'PAY-' + facture.id,
+                                facture: facture,
+                                montant: facture.montantTotal,
+                                mode: 'ORANGE',
+                                datePaiement: facture.dateEmission || new Date().toISOString().split('T')[0],
+                                statut: 'REUSSI'
+                            });
+                        }
+                    });
                 }
+                displayPaiements(paiements);
+                updatePaiementStats(paiements);
+            },
+            error: function(xhr) {
+                console.error('Erreur chargement factures:', xhr);
+                var msg = 'Erreur de chargement';
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.message) msg = response.message;
+                    if (response.error) msg = response.error;
+                } catch(e) {}
+                $('#paiementsBody').html('<tr><td colspan="7" class="text-center text-danger">Erreur: ' + msg + '</td></tr>');
             }
         });
     }
@@ -206,7 +187,7 @@
         paiements.forEach(function(p) {
             var statusClass = '';
             var statusText = p.statut || 'EN ATTENTE';
-            if (statusText === 'REUSSI') {
+            if (statusText === 'REUSSI' || statusText === 'PAYEE') {
                 statusClass = 'payee';
             } else if (statusText === 'EN ATTENTE') {
                 statusClass = 'en-attente';
@@ -214,13 +195,18 @@
                 statusClass = 'impayee';
             }
 
+            var abonneNom = 'N/A';
+            if (p.facture && p.facture.abonne && p.facture.abonne.utilisateur) {
+                abonneNom = p.facture.abonne.utilisateur.nom;
+            }
+
             html += '<tr>' +
                 '<td><strong>' + (p.reference || 'N/A') + '</strong></td>' +
                 '<td>' + (p.facture ? p.facture.numero : 'N/A') + '</td>' +
-                '<td>' + (p.facture && p.facture.abonne && p.facture.abonne.utilisateur ? p.facture.abonne.utilisateur.nom : 'N/A') + '</td>' +
+                '<td>' + abonneNom + '</td>' +
                 '<td><strong>' + (p.montant ? p.montant.toLocaleString() + ' CFA' : '0 CFA') + '</strong></td>' +
                 '<td>' + (p.mode || 'N/A') + '</td>' +
-                '<td>' + (p.datePaiement || 'N/A') + '</td>' +
+                '<td>' + (p.datePaiement ? (Array.isArray(p.datePaiement) ? p.datePaiement.join("-") : p.datePaiement) : "N/A") + '</td>' +
                 '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>' +
             '</tr>';
         });
@@ -229,52 +215,42 @@
     }
 
     function loadPaiementStats() {
-        // Simulation de stats
-        $('#totalPaiementsStat').text(45);
-        $('#paiementsReussisStat').text(32);
-        $('#paiementsEnAttenteStat').text(8);
-        $('#paiementsEchouesStat').text(5);
-    }
-
-    function effectuerPaiement(event) {
-        event.preventDefault();
-
-        var factureId = $('#factureId').val();
-        var montant = $('#montant').val();
-        var mode = $('input[name="mode"]:checked').val();
-
-        if (!factureId || !montant || !mode) {
-            alert('Veuillez remplir tous les champs');
-            return false;
-        }
-
-        var data = {
-            factureId: parseInt(factureId),
-            montant: parseFloat(montant),
-            mode: mode
-        };
-
-        var url = mode === 'ORANGE' ? '/api/paiements/orange-money' : '/api/paiements/moov-money';
-
         $.ajax({
-            url: url,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(data),
-            success: function(response) {
-                alert('Paiement effectué avec succès : ' + (response || ''));
-                $('#paiementForm')[0].reset();
-                loadPaiements();
-                if (isAdminOrAgent) {
-                    loadPaiementStats();
+            url: '/api/factures/stats',
+            method: 'GET',
+            success: function(data) {
+                if (data) {
+                    $('#totalPaiementsStat').text(data.payees || 0);
+                    $('#paiementsReussisStat').text(data.payees || 0);
+                    $('#paiementsEnAttenteStat').text(data.enAttente || 0);
+                    $('#paiementsEchouesStat').text(0);
                 }
             },
-            error: function(xhr) {
-                alert('Erreur lors du paiement : ' + (xhr.responseText || ''));
+            error: function() {
+                $('#totalPaiementsStat').text(0);
+                $('#paiementsReussisStat').text(0);
+                $('#paiementsEnAttenteStat').text(0);
+                $('#paiementsEchouesStat').text(0);
             }
         });
+    }
 
-        return false;
+    function updatePaiementStats(paiements) {
+        var total = paiements.length;
+        var reussis = paiements.filter(function(p) {
+            return p.statut === 'REUSSI' || p.statut === 'PAYEE';
+        }).length;
+        var enAttente = paiements.filter(function(p) {
+            return p.statut === 'EN ATTENTE';
+        }).length;
+        var echoues = paiements.filter(function(p) {
+            return p.statut === 'ECHOUE' || p.statut === 'IMPAYEE';
+        }).length;
+
+        $('#totalPaiementsStat').text(total);
+        $('#paiementsReussisStat').text(reussis);
+        $('#paiementsEnAttenteStat').text(enAttente);
+        $('#paiementsEchouesStat').text(echoues);
     }
 </script>
 </body>

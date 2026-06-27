@@ -19,13 +19,15 @@ public class RapportService {
     }
 
     public Rapport genererRapport(){
+        return genererRapport("STATISTIQUE");
+    }
 
+    public Rapport genererRapport(String type){
         Rapport rapport = new Rapport();
-
-        rapport.setType("STATISTIQUE");
+        String rapportType = (type != null && !type.isEmpty()) ? type : "STATISTIQUE";
+        rapport.setType(rapportType);
         rapport.setDateGeneration(LocalDate.now());
-        rapport.setContenu("Rapport généré automatiquement");
-
+        rapport.setContenu("Rapport " + rapportType + " généré le " + LocalDate.now());
         return repository.save(rapport);
     }
 }

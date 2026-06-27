@@ -10,9 +10,7 @@
   <div class="top-header">
     <div class="page-title">
       <h4><i class="fas fa-headset me-2"></i>Gestion des Réclamations</h4>
-      <p th:text="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')} ? 'Gérez toutes les réclamations des abonnés' : 'Consultez et gérez vos réclamations'">
-        Gestion des réclamations
-      </p>
+      <p>Consultez et répondez aux réclamations des abonnés</p>
     </div>
     <div class="header-actions">
       <div class="user-profile" onclick="window.location.href='/logout'">
@@ -28,64 +26,80 @@
   </div>
 
   <div class="content-area">
-    <div class="row g-4">
-      <!-- Formulaire de réclamation - visible pour tous -->
-      <div class="col-lg-4">
-        <div class="data-card">
-          <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Nouvelle réclamation</h5>
-          <p class="text-muted small">Soumettez une réclamation pour un problème rencontré.</p>
-          <form id="reclamationForm" onsubmit="return createReclamation(event)">
-            <div class="mb-3">
-              <label class="form-label">Objet <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-custom" id="recObjet" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Description <span class="text-danger">*</span></label>
-              <textarea class="form-control form-control-custom" id="recDescription" rows="4" required></textarea>
-            </div>
-            <div class="mb-3" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
-              <label class="form-label">ID Abonné <span class="text-danger">*</span></label>
-              <input type="number" class="form-control form-control-custom" id="recAbonneId" required>
-              <small class="text-muted">Pour les abonnés, leur ID est automatiquement utilisé</small>
-            </div>
-            <input type="hidden" id="recAbonneIdHidden" th:value="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')') ? '' : '1'}">
-            <button type="submit" class="btn btn-primary-custom w-100">
-              <i class="fas fa-send me-1"></i> Envoyer la réclamation
-            </button>
-          </form>
+    <!-- Statistiques -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <i class="fas fa-list"></i>
+          </div>
+          <h2 class="stat-number" id="totalReclamations">0</h2>
+          <p class="stat-label">Total Réclamations</p>
         </div>
       </div>
-
-      <!-- Liste des réclamations -->
-      <div class="col-lg-8">
-        <div class="data-card">
-          <div class="card-header-custom">
-            <h5><i class="fas fa-list me-2"></i>Liste des réclamations</h5>
-            <span class="text-muted" id="recCount">0 réclamations</span>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon yellow">
+            <i class="fas fa-clock"></i>
           </div>
-          <div class="table-responsive">
-            <table class="table table-custom">
-              <thead>
-              <tr>
-                <th>Abonné</th>
-                <th>Objet</th>
-                <th>Date</th>
-                <th>Statut</th>
-                <th>Réponse</th>
-                <th>Actions</th>
-              </tr>
-              </thead>
-              <tbody id="reclamationsBody">
-              <tr>
-                <td colspan="6" class="text-center text-muted">
-                  <div class="spinner-custom mx-auto"></div>
-                  <span class="d-block mt-2">Chargement des réclamations...</span>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
+          <h2 class="stat-number" id="reclamationsEnAttente">0</h2>
+          <p class="stat-label">En Attente</p>
         </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h2 class="stat-number" id="reclamationsTraitees">0</h2>
+          <p class="stat-label">Traitées</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon red">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <h2 class="stat-number" id="reclamationsRejetees">0</h2>
+          <p class="stat-label">Rejetées</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mb-4">
+      <button class="btn btn-outline-secondary" onclick="loadReclamations()">
+        <i class="fas fa-sync-alt me-1"></i> Rafraîchir
+      </button>
+    </div>
+
+    <!-- Liste -->
+    <div class="data-card">
+      <div class="card-header-custom">
+        <h5><i class="fas fa-list me-2"></i>Liste des réclamations</h5>
+        <span class="text-muted" id="recCount">0 réclamations</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-custom">
+          <thead>
+          <tr>
+            <th>Abonné</th>
+            <th>Objet</th>
+            <th>Date</th>
+            <th>Statut</th>
+            <th>Réponse</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody id="reclamationsBody">
+          <tr>
+            <td colspan="6" class="text-center text-muted">
+              <div class="spinner-custom mx-auto"></div>
+              <span class="d-block mt-2">Chargement des réclamations...</span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -93,7 +107,7 @@
   <div th:replace="~{fragments/footer :: footer}"></div>
 </div>
 
-<!-- Modal Répondre - Visible pour tous -->
+<!-- Modal Répondre -->
 <div class="modal fade" id="repondreModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -105,131 +119,62 @@
         <input type="hidden" id="recIdRepondre">
         <div class="mb-3">
           <label class="form-label">Votre réponse <span class="text-danger">*</span></label>
-          <textarea class="form-control form-control-custom" id="reponseText" rows="4" required placeholder="Rédigez votre réponse ici..."></textarea>
-        </div>
-        <div class="alert alert-info" th:if="${#authorization.expression('hasRole(''ABONNE'')')}">
-          <i class="fas fa-info-circle me-2"></i>
-          <strong>Note :</strong> En tant qu'abonné, vous pouvez répondre à vos propres réclamations.
-          Votre réponse sera visible par les administrateurs et les agents.
-        </div>
-        <div class="alert alert-info" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
-          <i class="fas fa-info-circle me-2"></i>
-          <strong>Note :</strong> En tant que <span th:text="${#authorization.expression('hasRole(''ADMIN'')') ? 'administrateur' : 'agent'}">staff</span>,
-          vous pouvez répondre à toutes les réclamations.
+          <textarea class="form-control form-control-custom" id="reponseText" rows="4" required></textarea>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
         <button type="button" class="btn btn-primary-custom" onclick="envoyerReponse()">
-          <i class="fas fa-send me-1"></i> Envoyer la réponse
+          <i class="fas fa-send me-1"></i> Envoyer
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal pour voir la réponse complète -->
-<div class="modal fade" id="viewReponseModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Détail de la réponse</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label fw-bold">Réclamation :</label>
-          <p id="viewRecObjet" class="border-bottom pb-2"></p>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-bold">Description :</label>
-          <p id="viewRecDescription" class="border-bottom pb-2"></p>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-bold">Réponse :</label>
-          <p id="viewRecReponse" class="border-bottom pb-2"></p>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-bold">Répondu par :</label>
-          <p id="viewRecRepondant"></p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
-  var isAdminOrAgent = false;
-  var isAbonne = false;
-  var currentUserId = null;
-
   $(document).ready(function() {
-      var authorities = '[[${#authentication.principal.authorities}]]';
-      isAdminOrAgent = authorities.includes('ADMIN') || authorities.includes('AGENT');
-      isAbonne = authorities.includes('ABONNE');
-
-      // Récupérer l'ID de l'abonné connecté
-      if (isAbonne) {
-          loadAbonneId();
-      } else {
-          loadReclamations();
-      }
-
-      // Pour ADMIN et AGENT, pas besoin d'ID spécifique
-      if (isAdminOrAgent) {
-          loadReclamations();
-      }
+      console.log('Page réclamations chargée');
+      loadReclamations();
   });
 
-  function loadAbonneId() {
+  function loadReclamations() {
+      console.log('Chargement des réclamations...');
+
+      $('#reclamationsBody').html('<tr><td colspan="6" class="text-center text-muted"><div class="spinner-custom mx-auto"></div><span class="d-block mt-2">Chargement...</span></td></tr>');
+
       $.ajax({
-          url: '/api/abonnes',
+          url: '/api/reclamations',
           method: 'GET',
           success: function(data) {
-              if (data && data.length > 0) {
-                  // Prendre le premier abonné (en réalité, on devrait prendre celui connecté)
-                  currentUserId = data[0].id;
-                  loadReclamations();
-              }
+              console.log('Réclamations reçues:', data.length);
+              displayReclamations(data);
+              updateStats(data);
           },
-          error: function() {
-              currentUserId = 1; // Fallback
-              loadReclamations();
+          error: function(xhr) {
+              console.error('Erreur chargement réclamations:', xhr);
+              var msg = 'Erreur de chargement';
+              try {
+                  var response = JSON.parse(xhr.responseText);
+                  if (response.message) msg = response.message;
+                  if (response.error) msg = response.error;
+              } catch(e) {}
+              $('#reclamationsBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur: ' + msg + '</td></tr>');
           }
       });
   }
 
-  function loadReclamations() {
-      var url = '';
+  function updateStats(data) {
+      var recs = data || [];
+      var total = recs.length;
+      var enAttente = recs.filter(function(r) { return r.statut === 'EN ATTENTE'; }).length;
+      var traitees = recs.filter(function(r) { return r.statut === 'TRAITEE'; }).length;
+      var rejetees = recs.filter(function(r) { return r.statut === 'REJETEE'; }).length;
 
-      if (isAdminOrAgent) {
-          // ADMIN et AGENT voient toutes les réclamations
-          url = '/api/reclamations';
-      } else if (isAbonne && currentUserId) {
-          // Abonné voit ses propres réclamations
-          url = '/api/reclamations/abonne/' + currentUserId;
-      } else {
-          // Fallback
-          url = '/api/reclamations/abonne/1';
-      }
-
-      $.ajax({
-          url: url,
-          method: 'GET',
-          success: function(data) {
-              displayReclamations(data);
-          },
-          error: function(xhr) {
-              if (xhr.status === 403) {
-                  $('#reclamationsBody').html('<tr><td colspan="6" class="text-center text-warning">Accès non autorisé</td></tr>');
-              } else {
-                  $('#reclamationsBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur de chargement des réclamations</td></tr>');
-              }
-          }
-      });
+      $('#totalReclamations').text(total);
+      $('#reclamationsEnAttente').text(enAttente);
+      $('#reclamationsTraitees').text(traitees);
+      $('#reclamationsRejetees').text(rejetees);
   }
 
   function displayReclamations(data) {
@@ -249,37 +194,30 @@
               statusClass = 'payee';
           } else if (statusText === 'EN ATTENTE') {
               statusClass = 'en-attente';
-          } else if (statusText === 'REJETEE') {
-              statusClass = 'impayee';
           } else {
-              statusClass = 'en-attente';
+              statusClass = 'impayee';
           }
 
-          // Actions disponibles pour tous
           var actions = '';
-          if (statusText === 'EN ATTENTE' || statusText === 'REJETEE') {
-              // Tous peuvent répondre aux réclamations en attente
-              actions = '<button class="btn btn-sm btn-primary me-1" onclick="openRepondre(' + rec.id + ')"><i class="fas fa-reply me-1"></i>Répondre</button>';
+          if (statusText === 'EN ATTENTE') {
+              actions += '<button class="btn btn-sm btn-primary me-1" onclick="openRepondre(' + rec.id + ')"><i class="fas fa-reply me-1"></i>Répondre</button>';
           }
-
-          // Ajouter un bouton pour voir les détails
-          actions += '<button class="btn btn-sm btn-outline-info" onclick="viewReponse(' + rec.id + ')"><i class="fas fa-eye"></i></button>';
-
-          // ADMIN peut supprimer
-          if (isAdminOrAgent) {
-              actions += '<button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteReclamation(' + rec.id + ')"><i class="fas fa-trash"></i></button>';
-          }
+          actions += '<button class="btn btn-sm btn-outline-danger" onclick="deleteReclamation(' + rec.id + ')"><i class="fas fa-trash"></i></button>';
 
           var reponseDisplay = rec.reponse || '<span class="text-muted">En attente</span>';
-          // Tronquer la réponse si trop longue
-          if (rec.reponse && rec.reponse.length > 50) {
-              reponseDisplay = rec.reponse.substring(0, 50) + '...';
+          if (rec.reponse && rec.reponse.length > 30) {
+              reponseDisplay = rec.reponse.substring(0, 30) + '...';
+          }
+
+          var abonneNom = 'N/A';
+          if (rec.abonne && rec.abonne.utilisateur) {
+              abonneNom = rec.abonne.utilisateur.nom;
           }
 
           html += '<tr>' +
-              '<td>' + (rec.abonne && rec.abonne.utilisateur ? rec.abonne.utilisateur.nom : 'N/A') + '</td>' +
+              '<td>' + abonneNom + '</td>' +
               '<td><strong>' + (rec.objet || 'N/A') + '</strong></td>' +
-              '<td>' + (rec.dateDepot || 'N/A') + '</td>' +
+              '<td>' + (rec.dateDepot ? (Array.isArray(rec.dateDepot) ? rec.dateDepot.join("-") : rec.dateDepot) : "N/A") + '</td>' +
               '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>' +
               '<td>' + reponseDisplay + '</td>' +
               '<td>' + actions + '</td>' +
@@ -289,50 +227,8 @@
       $('#reclamationsBody').html(html);
   }
 
-  function createReclamation(event) {
-      event.preventDefault();
-
-      var objet = $('#recObjet').val();
-      var description = $('#recDescription').val();
-      var abonneId = $('#recAbonneId').val();
-
-      // Si c'est un abonné, utiliser son ID
-      if (isAbonne && currentUserId) {
-          abonneId = currentUserId;
-      }
-
-      if (!objet || !description || !abonneId) {
-          alert('Veuillez remplir tous les champs obligatoires');
-          return false;
-      }
-
-      var data = {
-          objet: objet,
-          description: description,
-          statut: 'EN ATTENTE',
-          dateDepot: new Date().toISOString().split('T')[0],
-          abonne: { id: parseInt(abonneId) }
-      };
-
-      $.ajax({
-          url: '/api/reclamations',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify(data),
-          success: function() {
-              alert('Réclamation envoyée avec succès');
-              $('#reclamationForm')[0].reset();
-              loadReclamations();
-          },
-          error: function(xhr) {
-              alert('Erreur: ' + (xhr.responseText || 'Impossible d\'envoyer la réclamation'));
-          }
-      });
-
-      return false;
-  }
-
   function openRepondre(id) {
+      console.log('Ouverture modal pour répondre à la réclamation #' + id);
       $('#recIdRepondre').val(id);
       $('#reponseText').val('');
       $('#repondreModal').modal('show');
@@ -347,54 +243,27 @@
           return;
       }
 
-      // Vérifier si l'utilisateur a le droit de répondre à cette réclamation
-      // L'API backend fera la vérification du droit d'accès
+      console.log('Envoi réponse pour réclamation #' + id);
 
       $.ajax({
           url: '/api/reclamations/' + id + '/repondre',
           method: 'PUT',
           contentType: 'application/json',
           data: JSON.stringify({ reponse: reponse }),
-          success: function(response) {
+          success: function() {
               alert('Réponse envoyée avec succès !');
               $('#repondreModal').modal('hide');
               loadReclamations();
           },
           error: function(xhr) {
-              var msg = xhr.responseText || 'Impossible d\'envoyer la réponse';
-              if (xhr.status === 403) {
-                  msg = 'Vous n\'avez pas les droits pour répondre à cette réclamation.';
-              }
-              alert('Erreur: ' + msg);
-          }
-      });
-  }
-
-  function viewReponse(id) {
-      // Récupérer les détails de la réclamation
-      $.ajax({
-          url: '/api/reclamations',
-          method: 'GET',
-          success: function(data) {
-              var rec = data.find(r => r.id === id);
-              if (rec) {
-                  $('#viewRecObjet').text(rec.objet || 'N/A');
-                  $('#viewRecDescription').text(rec.description || 'N/A');
-                  $('#viewRecReponse').text(rec.reponse || 'Aucune réponse');
-                  $('#viewRecRepondant').text(rec.repondantNom || 'Non spécifié');
-                  $('#viewReponseModal').modal('show');
-              } else {
-                  alert('Réclamation non trouvée');
-              }
-          },
-          error: function() {
-              alert('Erreur lors du chargement des détails');
+              console.error('Erreur envoi réponse:', xhr);
+              alert('Erreur: ' + (xhr.responseText || 'Impossible d\'envoyer la réponse'));
           }
       });
   }
 
   function deleteReclamation(id) {
-      if (confirm('Êtes-vous sûr de vouloir supprimer cette réclamation ?')) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer cette réclamation #' + id + ' ?')) {
           $.ajax({
               url: '/api/reclamations/' + id,
               method: 'DELETE',

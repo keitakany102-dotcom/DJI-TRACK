@@ -32,6 +32,9 @@
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                     <input type="text" class="form-control form-control-custom" id="searchFacture" placeholder="Rechercher par numéro ou abonné...">
+                    <button class="btn btn-outline-secondary" onclick="resetFactureFilters()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
             <div class="col-md-3">
@@ -52,10 +55,13 @@
             </div>
         </div>
 
-        <!-- Bouton créer - Visible uniquement pour ADMIN et AGENT -->
-        <div class="mb-4" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+        <!-- Bouton créer -->
+        <div class="mb-4">
             <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createFactureModal">
                 <i class="fas fa-plus me-1"></i> Nouvelle facture
+            </button>
+            <button class="btn btn-outline-secondary ms-2" onclick="loadFactures()">
+                <i class="fas fa-sync-alt me-1"></i> Rafraîchir
             </button>
         </div>
 
@@ -133,8 +139,8 @@
     <div th:replace="~{fragments/footer :: footer}"></div>
 </div>
 
-<!-- Modal Créer Facture - ADMIN et AGENT uniquement -->
-<div class="modal fade" id="createFactureModal" tabindex="-1" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+<!-- Modal Créer Facture -->
+<div class="modal fade" id="createFactureModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -146,7 +152,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Numéro de facture <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-custom" id="factureNumero" required>
+                            <input type="text" class="form-control form-control-custom" id="factureNumero" required placeholder="Ex: FAC-2026-001">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Montant total <span class="text-danger">*</span></label>
@@ -154,7 +160,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">ID Abonné <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control form-control-custom" id="factureAbonneId" required>
+                            <input type="number" class="form-control form-control-custom" id="factureAbonneId" required placeholder="Ex: 1, 2, 3...">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Date d'émission</label>
@@ -182,33 +188,47 @@
 </div>
 
 <script>
-    var isAdminOrAgent = false;
-
     $(document).ready(function() {
-        var authorities = '[[${#authentication.principal.authorities}]]';
-        isAdminOrAgent = authorities.includes('ADMIN') || authorities.includes('AGENT');
-
+        console.log('Page factures chargée');
         loadFactures();
         loadStats();
 
-        $('#filterStatut').on('change', loadFactures);
-        $('#filterDate').on('change', loadFactures);
+        $('#filterStatut').on('change', function() {
+            loadFactures();
+        });
+        $('#filterDate').on('change', function() {
+            loadFactures();
+        });
         $('#searchFacture').on('keypress', function(e) {
-            if (e.which === 13) loadFactures();
+            if (e.which === 13) {
+                e.preventDefault();
+                loadFactures();
+            }
         });
     });
 
     function loadStats() {
+        console.log('Chargement des stats...');
+
         $.ajax({
             url: '/api/factures/stats',
             method: 'GET',
             success: function(data) {
+                console.log('Stats reçues:', data);
                 if (data) {
                     $('#totalFacturesStat').text(data.total || 0);
                     $('#payeesStat').text(data.payees || 0);
                     $('#attenteStat').text(data.enAttente || 0);
                     $('#impayeesStat').text(data.impayees || 0);
                 }
+            },
+            error: function(xhr) {
+                console.error('Erreur chargement stats:', xhr);
+                // Fallback
+                $('#totalFacturesStat').text(0);
+                $('#payeesStat').text(0);
+                $('#attenteStat').text(0);
+                $('#impayeesStat').text(0);
             }
         });
     }
@@ -218,26 +238,36 @@
         var statut = $('#filterStatut').val();
         var date = $('#filterDate').val();
 
+        console.log('Chargement des factures avec filtres:', {search, statut, date});
+
+        $('#facturesTableBody').html('<tr><td colspan="6" class="text-center text-muted"><div class="spinner-custom mx-auto"></div><span class="d-block mt-2">Chargement...</span></td></tr>');
+
         $.ajax({
             url: '/api/factures',
             method: 'GET',
             success: function(data) {
+                console.log('Factures reçues:', data.length);
                 var filtered = data || [];
 
                 if (search) {
                     var s = search.toLowerCase();
-                    filtered = filtered.filter(f =>
-                        (f.numero && f.numero.toLowerCase().includes(s)) ||
-                        (f.abonne && f.abonne.utilisateur && f.abonne.utilisateur.nom && f.abonne.utilisateur.nom.toLowerCase().includes(s))
-                    );
+                    filtered = filtered.filter(function(f) {
+                        return (f.numero && f.numero.toLowerCase().includes(s)) ||
+                               (f.abonne && f.abonne.utilisateur && f.abonne.utilisateur.nom &&
+                                f.abonne.utilisateur.nom.toLowerCase().includes(s));
+                    });
                 }
 
                 if (statut !== 'all') {
-                    filtered = filtered.filter(f => f.statut === statut);
+                    filtered = filtered.filter(function(f) {
+                        return f.statut === statut;
+                    });
                 }
 
                 if (date) {
-                    filtered = filtered.filter(f => f.dateEmission === date);
+                    filtered = filtered.filter(function(f) {
+                        return f.dateEmission === date;
+                    });
                 }
 
                 $('#factureCount').text(filtered.length + ' factures');
@@ -259,36 +289,48 @@
                         statusClass = 'impayee';
                     }
 
-                    var actions = '';
-                    if (isAdminOrAgent) {
-                        actions = '<button class="btn btn-sm btn-outline-primary me-1" onclick="editFacture(' + f.id + ')"><i class="fas fa-edit"></i></button>' +
-                                  '<button class="btn btn-sm btn-outline-danger" onclick="deleteFacture(' + f.id + ')"><i class="fas fa-trash"></i></button>';
+                    var abonneNom = 'N/A';
+                    if (f.abonne && f.abonne.utilisateur) {
+                        abonneNom = f.abonne.utilisateur.nom;
                     }
 
                     html += '<tr>' +
                         '<td><strong>' + (f.numero || 'N/A') + '</strong></td>' +
-                        '<td>' + (f.abonne && f.abonne.utilisateur ? f.abonne.utilisateur.nom : 'N/A') + '</td>' +
+                        '<td>' + abonneNom + '</td>' +
                         '<td><strong>' + (f.montantTotal ? f.montantTotal.toLocaleString() + ' CFA' : '0 CFA') + '</strong></td>' +
                         '<td>' + (f.dateEmission || 'N/A') + '</td>' +
                         '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>' +
-                        '<td>' + actions + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-outline-primary me-1" onclick="editFacture(' + f.id + ')"><i class="fas fa-edit"></i></button>' +
+                            '<button class="btn btn-sm btn-outline-danger" onclick="deleteFacture(' + f.id + ')"><i class="fas fa-trash"></i></button>' +
+                        '</td>' +
                     '</tr>';
                 });
 
                 $('#facturesTableBody').html(html);
             },
             error: function(xhr) {
-                if (xhr.status === 403) {
-                    $('#facturesTableBody').html('<tr><td colspan="6" class="text-center text-warning">Accès non autorisé</td></tr>');
-                } else {
-                    $('#facturesTableBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur de chargement</td></tr>');
-                }
+                console.error('Erreur chargement factures:', xhr);
+                var msg = 'Erreur de chargement';
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.message) msg = response.message;
+                    if (response.error) msg = response.error;
+                } catch(e) {}
+                $('#facturesTableBody').html('<tr><td colspan="6" class="text-center text-danger">Erreur: ' + msg + '</td></tr>');
             }
         });
     }
 
+    function resetFactureFilters() {
+        $('#searchFacture').val('');
+        $('#filterStatut').val('all');
+        $('#filterDate').val('');
+        loadFactures();
+    }
+
     function createFacture() {
-        var numero = $('#factureNumero').val();
+        var numero = $('#factureNumero').val().trim();
         var montant = $('#factureMontant').val();
         var abonneId = $('#factureAbonneId').val();
         var date = $('#factureDate').val() || new Date().toISOString().split('T')[0];
@@ -307,35 +349,39 @@
             abonne: { id: parseInt(abonneId) }
         };
 
+        console.log('Création facture:', data);
+
         $.ajax({
             url: '/api/factures',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(data),
-            success: function() {
-                alert('Facture créée avec succès');
+            success: function(response) {
+                console.log('Facture créée:', response);
+                alert('Facture créée avec succès !');
                 $('#createFactureModal').modal('hide');
                 $('#factureForm')[0].reset();
                 loadFactures();
                 loadStats();
             },
             error: function(xhr) {
+                console.error('Erreur création facture:', xhr);
                 alert('Erreur: ' + (xhr.responseText || 'Impossible de créer la facture'));
             }
         });
     }
 
     function editFacture(id) {
-        alert('Fonctionnalité d\'édition en développement');
+        alert('Fonctionnalité d\'édition en développement pour la facture #' + id);
     }
 
     function deleteFacture(id) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture #' + id + ' ?')) {
             $.ajax({
                 url: '/api/factures/' + id,
                 method: 'DELETE',
                 success: function() {
-                    alert('Facture supprimée');
+                    alert('Facture supprimée avec succès');
                     loadFactures();
                     loadStats();
                 },

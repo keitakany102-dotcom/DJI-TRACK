@@ -57,13 +57,16 @@
             </div>
         </div>
 
-        <!-- Search -->
+        <!-- Search & Actions -->
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="input-group">
-                    <input type="text" class="form-control form-control-custom" id="searchAbonne" placeholder="Rechercher un abonné par nom, email ou adresse...">
+                    <input type="text" class="form-control form-control-custom" id="searchAbonne" placeholder="Rechercher un abonné...">
                     <button class="btn btn-primary-custom" onclick="loadAbonnes()">
                         <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="resetSearch()">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
@@ -79,6 +82,9 @@
             <div class="card-header-custom">
                 <h5><i class="fas fa-list me-2"></i>Liste des abonnés</h5>
                 <span class="text-muted" id="abonneCount">0 abonnés</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadAbonnes()">
+                    <i class="fas fa-sync-alt"></i> Rafraîchir
+                </button>
             </div>
             <div class="table-responsive">
                 <table class="table table-custom">
@@ -153,25 +159,36 @@
 
 <script>
     $(document).ready(function() {
+        console.log('Page abonnes chargée');
         loadAbonnes();
 
         $('#searchAbonne').on('keypress', function(e) {
-            if (e.which === 13) loadAbonnes();
+            if (e.which === 13) {
+                e.preventDefault();
+                loadAbonnes();
+            }
         });
     });
 
     function loadAbonnes() {
         var search = $('#searchAbonne').val().trim();
+        console.log('Chargement des abonnés... Search: "' + search + '"');
+
+        $('#abonnesBody').html('<tr><td colspan="7" class="text-center text-muted"><div class="spinner-custom mx-auto"></div><span class="d-block mt-2">Chargement...</span></td></tr>');
 
         $.ajax({
             url: '/api/abonnes',
             method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             success: function(data) {
+                console.log('Abonnés reçus:', data);
                 var abonnes = data || [];
 
                 if (search) {
                     var s = search.toLowerCase();
-                    abonnes = abonnes.filter(a => {
+                    abonnes = abonnes.filter(function(a) {
                         var user = a.utilisateur || {};
                         return (user.nom && user.nom.toLowerCase().includes(s)) ||
                                (user.email && user.email.toLowerCase().includes(s)) ||
@@ -181,23 +198,31 @@
 
                 displayAbonnes(abonnes);
 
-                // Stats
+                // Mettre à jour les stats
                 $('#totalAbonnes').text(abonnes.length);
-                // Pour les stats, on considère que tous sont actifs par défaut
                 $('#abonnesActifs').text(abonnes.length);
                 $('#abonnesInactifs').text(0);
             },
-            error: function(xhr) {
-                if (xhr.status === 403) {
-                    $('#abonnesBody').html('<tr><td colspan="7" class="text-center text-warning">Accès non autorisé - Vous n\'avez pas les permissions nécessaires</td></tr>');
-                } else {
-                    $('#abonnesBody').html('<tr><td colspan="7" class="text-center text-danger">Erreur de chargement des abonnés</td></tr>');
-                }
+            error: function(xhr, status, error) {
+                console.error('Erreur chargement abonnés:', xhr.status, xhr.responseText);
+                var msg = 'Erreur de chargement';
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.message) msg = response.message;
+                    if (response.error) msg = response.error;
+                } catch(e) {}
+                $('#abonnesBody').html('<tr><td colspan="7" class="text-center text-danger">Erreur: ' + msg + '</td></tr>');
             }
         });
     }
 
+    function resetSearch() {
+        $('#searchAbonne').val('');
+        loadAbonnes();
+    }
+
     function displayAbonnes(abonnes) {
+        console.log('Affichage de ' + abonnes.length + ' abonnés');
         $('#abonneCount').text(abonnes.length + ' abonnés');
 
         if (abonnes.length === 0) {
@@ -228,6 +253,8 @@
     }
 
     function createAbonne() {
+        console.log('Création d\'un nouvel abonné...');
+
         var nom = $('#abonneNom').val().trim();
         var email = $('#abonneEmail').val().trim();
         var telephone = $('#abonneTelephone').val().trim();
@@ -253,12 +280,15 @@
             role: 'ROLE_ABONNE'
         };
 
+        console.log('Création utilisateur:', userData);
+
         $.ajax({
             url: '/admin/api/users',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(userData),
             success: function(response) {
+                console.log('Utilisateur créé:', response);
                 var userId = response.user ? response.user.id : null;
                 if (userId) {
                     // Créer l'abonné
@@ -267,35 +297,41 @@
                         adresse: adresse || ''
                     };
 
+                    console.log('Création abonné:', abonneData);
+
                     $.ajax({
                         url: '/api/abonnes',
                         method: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify(abonneData),
                         success: function() {
-                            alert('Abonné créé avec succès');
+                            alert('Abonné créé avec succès !');
                             $('#createAbonneModal').modal('hide');
                             $('#abonneForm')[0].reset();
                             loadAbonnes();
                         },
-                        error: function() {
-                            alert('Erreur lors de la création de l\'abonné');
+                        error: function(xhr) {
+                            console.error('Erreur création abonné:', xhr);
+                            alert('Erreur lors de la création de l\'abonné: ' + (xhr.responseText || ''));
                         }
                     });
+                } else {
+                    alert('Erreur: ID utilisateur non retourné');
                 }
             },
             error: function(xhr) {
+                console.error('Erreur création utilisateur:', xhr);
                 alert('Erreur: ' + (xhr.responseText || 'Impossible de créer l\'utilisateur'));
             }
         });
     }
 
     function editAbonne(id) {
-        alert('Fonctionnalité d\'édition en développement');
+        alert('Fonctionnalité d\'édition en développement pour l\'abonné #' + id);
     }
 
     function deleteAbonne(id) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cet abonné ?')) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cet abonné #' + id + ' ?')) {
             $.ajax({
                 url: '/api/abonnes/' + id,
                 method: 'DELETE',

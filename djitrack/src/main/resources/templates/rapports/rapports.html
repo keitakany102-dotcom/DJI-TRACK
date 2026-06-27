@@ -27,8 +27,8 @@
 
     <div class="content-area">
         <div class="row g-4">
-            <!-- Générer un rapport - ADMIN et AGENT uniquement -->
-            <div class="col-lg-4" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+            <!-- Générer un rapport -->
+            <div class="col-lg-4">
                 <div class="data-card">
                     <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Générer un rapport</h5>
                     <p class="text-muted small">Créez un nouveau rapport statistique sur les factures et paiements.</p>
@@ -47,7 +47,7 @@
             </div>
 
             <!-- Statistiques rapides -->
-            <div class="col-lg-8" th:classappend="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')} ? '' : 'col-lg-12'">
+            <div class="col-lg-8">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="stat-card">
@@ -88,12 +88,15 @@
                 </div>
             </div>
 
-            <!-- Liste des rapports - ADMIN et AGENT uniquement -->
-            <div class="col-12" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+            <!-- Liste des rapports -->
+            <div class="col-12">
                 <div class="data-card">
                     <div class="card-header-custom">
                         <h5><i class="fas fa-file-alt me-2"></i>Rapports générés</h5>
                         <span class="text-muted" id="rapportCount">0 rapports</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadRapports()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-custom">
@@ -117,16 +120,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Message pour les abonnés -->
-            <div class="col-12" th:if="${!#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
-                <div class="data-card text-center">
-                    <i class="fas fa-lock" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
-                    <h5>Accès limité</h5>
-                    <p class="text-muted">Les rapports et statistiques sont réservés aux administrateurs et aux agents.</p>
-                    <p class="text-muted small">Vous pouvez consulter vos factures et paiements dans les sections dédiées.</p>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -135,26 +128,29 @@
 
 <script>
     $(document).ready(function() {
+        console.log('Page rapports chargée');
         loadStats();
-
-        var authorities = '[[${#authentication.principal.authorities}]]';
-        var isAdminOrAgent = authorities.includes('ADMIN') || authorities.includes('AGENT');
-
-        if (isAdminOrAgent) {
-            loadRapports();
-        }
+        loadRapports();
     });
 
     function loadStats() {
+        console.log('Chargement des stats...');
+
         // Charger les stats des factures
         $.ajax({
             url: '/api/factures/stats',
             method: 'GET',
             success: function(data) {
+                console.log('Stats factures:', data);
                 if (data) {
                     $('#rapportPayees').text(data.payees || 0);
                     $('#rapportImpayees').text(data.impayees || 0);
                 }
+            },
+            error: function(xhr) {
+                console.error('Erreur chargement stats factures:', xhr);
+                $('#rapportPayees').text(0);
+                $('#rapportImpayees').text(0);
             }
         });
 
@@ -163,21 +159,40 @@
             url: '/api/abonnes',
             method: 'GET',
             success: function(data) {
-                if (data) {
-                    $('#rapportTotalAbonnes').text(data.length || 0);
-                }
+                console.log('Nombre d\'abonnés:', data ? data.length : 0);
+                $('#rapportTotalAbonnes').text(data ? data.length : 0);
+            },
+            error: function(xhr) {
+                console.error('Erreur chargement abonnés:', xhr);
+                $('#rapportTotalAbonnes').text(0);
             }
         });
 
-        // Simuler le nombre de paiements
-        $('#rapportTotalPaiements').text(189);
+        // Charger le nombre de paiements
+        $.ajax({
+            url: '/api/factures/stats',
+            method: 'GET',
+            success: function(data) {
+                if (data) {
+                    $('#rapportTotalPaiements').text(data.payees || 0);
+                }
+            },
+            error: function() {
+                $('#rapportTotalPaiements').text(0);
+            }
+        });
     }
 
     function loadRapports() {
+        console.log('Chargement des rapports...');
+
+        $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-muted"><div class="spinner-custom mx-auto"></div><span class="d-block mt-2">Chargement...</span></td></tr>');
+
         $.ajax({
             url: '/api/rapports',
             method: 'GET',
             success: function(data) {
+                console.log('Rapports reçus:', data);
                 var rapports = data || [];
                 $('#rapportCount').text(rapports.length + ' rapports');
 
@@ -190,7 +205,7 @@
                 rapports.forEach(function(r) {
                     html += '<tr>' +
                         '<td><span class="badge bg-primary">' + (r.type || 'N/A') + '</span></td>' +
-                        '<td>' + (r.dateGeneration || 'N/A') + '</td>' +
+                        '<td>' + (r.dateGeneration ? (Array.isArray(r.dateGeneration) ? r.dateGeneration.join("-") : r.dateGeneration) : "N/A") + '</td>' +
                         '<td>' + (r.contenu || 'N/A') + '</td>' +
                         '<td>' +
                             '<button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-eye"></i></button>' +
@@ -202,11 +217,14 @@
                 $('#rapportsBody').html(html);
             },
             error: function(xhr) {
-                if (xhr.status === 403) {
-                    $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-warning">Accès non autorisé</td></tr>');
-                } else {
-                    $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-danger">Erreur de chargement</td></tr>');
-                }
+                console.error('Erreur chargement rapports:', xhr);
+                var msg = 'Erreur de chargement';
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.message) msg = response.message;
+                    if (response.error) msg = response.error;
+                } catch(e) {}
+                $('#rapportsBody').html('<tr><td colspan="4" class="text-center text-danger">Erreur: ' + msg + '</td></tr>');
             }
         });
     }
@@ -214,15 +232,22 @@
     function genererRapport() {
         if (!confirm('Générer un nouveau rapport ?')) return;
 
+        var type = $('#rapportType').val();
+        console.log('Génération rapport de type:', type);
+
         $.ajax({
             url: '/api/rapports/generer',
             method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ type: type }),
             success: function(data) {
+                console.log('Rapport généré:', data);
                 alert('Rapport généré avec succès !');
                 loadRapports();
             },
             error: function(xhr) {
-                alert('Erreur: ' + (xhr.responseText || ''));
+                console.error('Erreur génération rapport:', xhr);
+                alert('Erreur: ' + (xhr.responseText || 'Impossible de générer le rapport'));
             }
         });
     }

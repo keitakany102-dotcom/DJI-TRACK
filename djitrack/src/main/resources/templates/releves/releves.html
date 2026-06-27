@@ -27,8 +27,8 @@
 
     <div class="content-area">
         <div class="row g-4">
-            <!-- Formulaire - Visible uniquement pour ADMIN et AGENT -->
-            <div class="col-lg-4" th:if="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')}">
+            <!-- Formulaire -->
+            <div class="col-lg-4">
                 <div class="data-card">
                     <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Nouveau relevé</h5>
                     <p class="text-muted small">Enregistrez un nouveau relevé de compteur pour un abonné.</p>
@@ -36,6 +36,7 @@
                         <div class="mb-3">
                             <label class="form-label">ID Abonné <span class="text-danger">*</span></label>
                             <input type="number" class="form-control form-control-custom" id="releveAbonneId" required>
+                            <small class="text-muted">Exemple: 1, 2, 3...</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Ancienne valeur <span class="text-danger">*</span></label>
@@ -57,11 +58,14 @@
             </div>
 
             <!-- Liste -->
-            <div class="col-lg-8" th:classappend="${#authorization.expression('hasAnyRole(''ADMIN'', ''AGENT'')')} ? '' : 'col-lg-12'">
+            <div class="col-lg-8">
                 <div class="data-card">
                     <div class="card-header-custom">
                         <h5><i class="fas fa-list me-2"></i>Historique des relevés</h5>
                         <span class="text-muted" id="releveCount">0 relevés</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadReleves()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-custom">
@@ -94,14 +98,20 @@
 
 <script>
     $(document).ready(function() {
+        console.log('Page relevés chargée');
         loadReleves();
     });
 
     function loadReleves() {
+        console.log('Chargement des relevés...');
+
+        $('#relevesBody').html('<tr><td colspan="5" class="text-center text-muted"><div class="spinner-custom mx-auto"></div><span class="d-block mt-2">Chargement...</span></td></tr>');
+
         $.ajax({
             url: '/api/releves',
             method: 'GET',
             success: function(data) {
+                console.log('Relevés reçus:', data);
                 var releves = data || [];
                 $('#releveCount').text(releves.length + ' relevés');
 
@@ -112,29 +122,39 @@
 
                 var html = '';
                 releves.forEach(function(r) {
+                    var abonneNom = 'N/A';
+                    if (r.abonne && r.abonne.utilisateur) {
+                        abonneNom = r.abonne.utilisateur.nom;
+                    }
+
                     html += '<tr>' +
-                        '<td>' + (r.abonne && r.abonne.utilisateur ? r.abonne.utilisateur.nom : 'N/A') + '</td>' +
+                        '<td>' + abonneNom + '</td>' +
                         '<td>' + (r.ancienneValeur || 0) + ' m³</td>' +
                         '<td>' + (r.nouvelleValeur || 0) + ' m³</td>' +
                         '<td><strong>' + (r.consommation || 0) + ' m³</strong></td>' +
-                        '<td>' + (r.dateReleve || 'N/A') + '</td>' +
+                        '<td>' + (r.dateReleve ? (Array.isArray(r.dateReleve) ? r.dateReleve.join("-") : r.dateReleve) : "N/A") + '</td>' +
                     '</tr>';
                 });
 
                 $('#relevesBody').html(html);
             },
             error: function(xhr) {
-                if (xhr.status === 403) {
-                    $('#relevesBody').html('<tr><td colspan="5" class="text-center text-warning">Accès non autorisé</td></tr>');
-                } else {
-                    $('#relevesBody').html('<tr><td colspan="5" class="text-center text-danger">Erreur de chargement</td></tr>');
-                }
+                console.error('Erreur chargement relevés:', xhr);
+                var msg = 'Erreur de chargement';
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.message) msg = response.message;
+                    if (response.error) msg = response.error;
+                } catch(e) {}
+                $('#relevesBody').html('<tr><td colspan="5" class="text-center text-danger">Erreur: ' + msg + '</td></tr>');
             }
         });
     }
 
     function createReleve(event) {
         event.preventDefault();
+
+        console.log('Création d\'un nouveau relevé...');
 
         var abonneId = $('#releveAbonneId').val();
         var ancienne = $('#ancienneValeur').val();
@@ -153,18 +173,22 @@
             dateReleve: date
         };
 
+        console.log('Données du relevé:', data);
+
         $.ajax({
             url: '/api/releves',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(data),
-            success: function() {
-                alert('Relevé enregistré avec succès');
+            success: function(response) {
+                console.log('Relevé créé:', response);
+                alert('Relevé enregistré avec succès !');
                 $('#releveForm')[0].reset();
                 loadReleves();
             },
             error: function(xhr) {
-                alert('Erreur: ' + (xhr.responseText || ''));
+                console.error('Erreur création relevé:', xhr);
+                alert('Erreur: ' + (xhr.responseText || 'Impossible d\'enregistrer le relevé'));
             }
         });
 
