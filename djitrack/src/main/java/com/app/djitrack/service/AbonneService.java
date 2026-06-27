@@ -20,4 +20,12 @@ public class AbonneService {
     public Abonne save(Abonne abonne) {
         return repository.save(abonne);
     }
+
+    public void deleteById(Long id) {
+        repository.deleteById(id);
+    }
+
+    public boolean existsById(Long id) {
+        return repository.existsById(id);
+    }
 }
