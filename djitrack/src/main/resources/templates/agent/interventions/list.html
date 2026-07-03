@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Interventions')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-tools"></i> Mes interventions</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Agent &rsaquo; Interventions</div>
+            </div>
+        </div>
+
+        <div class="table-card fade-up">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Date planifiée</th>
+                        <th>Description</th>
+                        <th>Équipe</th>
+                        <th>Statut</th>
+                        <th style="width:120px;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${interventions}">
+                        <td>
+                            <div class="fw-600" th:text="${#dates.format(i.datePlanifiee, 'dd/MM/yyyy')}"></div>
+                        </td>
+                        <td class="text-muted" th:text="${i.description}"></td>
+                        <td th:text="${i.equipe != null ? i.equipe.nom : '-'}"></td>
+                        <td>
+                            <span th:if="${i.statut == 'EN_COURS'}" class="badge badge-status-pending">
+                                <i class="bi bi-circle-fill me-1" style="font-size:0.5rem;"></i> En cours
+                            </span>
+                            <span th:if="${i.statut == 'TERMINEE'}" class="badge badge-status-active">
+                                <i class="bi bi-check-circle me-1"></i> Terminée
+                            </span>
+                            <span th:if="${i.statut == 'SUSPENDUE'}" class="badge badge-status-inactive">
+                                <i class="bi bi-pause-circle me-1"></i> Suspendue
+                            </span>
+                        </td>
+                        <td>
+                            <a th:href="@{/agent/interventions/edit/{id}(id=${i.id})}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil-square"></i> Rapport
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(interventions)}">
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-tools"></i>
+                                <p>Aucune intervention assignée</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Client - Formulaire')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-person-plus"></i>
+                    <span th:if="${client.id}">Modifier le client</span>
+                    <span th:unless="${client.id}">Nouveau client</span>
+                </h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Admin &rsaquo; Clients &rsaquo;
+                    <span th:if="${client.id}">Modifier</span><span th:unless="${client.id}">Nouveau</span>
+                </div>
+            </div>
+            <a th:href="@{/admin/clients}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger fade-up">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
+        </div>
+
+        <div class="card fade-up">
+            <div class="card-body">
+                <form th:action="@{/admin/clients/save}" th:object="${client}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" th:field="*{id}" />
+
+                    <div class="form-section-title">
+                        <i class="bi bi-person-circle"></i> Informations personnelles
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Nom *</label>
+                            <input type="text" th:field="*{nom}" class="form-control" placeholder="Nom de famille" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Prénom *</label>
+                            <input type="text" th:field="*{prenom}" class="form-control" placeholder="Prénom" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email *</label>
+                            <input type="email" th:field="*{email}" class="form-control" placeholder="email@exemple.com" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Téléphone *</label>
+                            <input type="text" th:field="*{telephone}" class="form-control" placeholder="+223 XX XX XX XX" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Adresse *</label>
+                            <input type="text" th:field="*{adresse}" class="form-control" placeholder="Adresse complète" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Type de client *</label>
+                            <select th:field="*{typeClient}" class="form-select">
+                                <option th:each="t : ${T(com.Somagep.entity.TypeClient).values()}"
+                                        th:value="${t}" th:text="${t}">PARTICULIER</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Photo de profil</label>
+                            <input type="file" name="photoFile" class="form-control" accept="image/*">
+                            <div class="form-text">JPG, PNG — max 2 Mo</div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">
+                        <i class="bi bi-shield-lock"></i> Informations de connexion
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Nom d'utilisateur *</label>
+                            <input type="text" name="username" class="form-control" placeholder="Identifiant unique" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mot de passe *</label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Enregistrer
+                        </button>
+                        <a th:href="@{/admin/clients}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/header :: header('Agent - Tableau de bord')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-person-badge"></i> Espace Agent</h1>
+                <div class="breadcrumb-custom">
+                    Bonjour, <strong sec:authentication="name"></strong> ! Voici votre résumé du jour.
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-4 fade-up delay-1">
+                <div class="stat-card stat-info">
+                    <div class="stat-icon"><i class="bi bi-clipboard-data-fill"></i></div>
+                    <div class="stat-label">Relevés à effectuer</div>
+                    <div class="stat-value" th:text="${relevesCount}">0</div>
+                    <div class="stat-trend"><i class="bi bi-arrow-right-short"></i>
+                        <a th:href="@{/agent/releves}" style="color:rgba(255,255,255,0.8);text-decoration:none;">Voir les relevés</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4 fade-up delay-2">
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon"><i class="bi bi-tools"></i></div>
+                    <div class="stat-label">Interventions en cours</div>
+                    <div class="stat-value" th:text="${interventionsCount}">0</div>
+                    <div class="stat-trend"><i class="bi bi-arrow-right-short"></i>
+                        <a th:href="@{/agent/interventions}" style="color:rgba(255,255,255,0.8);text-decoration:none;">Voir les interventions</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4 fade-up delay-3">
+                <div class="stat-card stat-success">
+                    <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+                    <div class="stat-label">Paiements validés</div>
+                    <div class="stat-value" th:text="${paiementsCount}">0</div>
+                    <div class="stat-trend"><i class="bi bi-arrow-right-short"></i>
+                        <a th:href="@{/agent/paiements}" style="color:rgba(255,255,255,0.8);text-decoration:none;">Voir les paiements</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="card fade-up">
+            <div class="card-header"><i class="bi bi-lightning-charge"></i> Actions rapides</div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a th:href="@{/agent/releves}" class="btn btn-outline-primary">
+                        <i class="bi bi-clipboard-plus"></i> Saisir un relevé
+                    </a>
+                    <a th:href="@{/agent/interventions}" class="btn btn-outline-warning">
+                        <i class="bi bi-tools"></i> Mes interventions
+                    </a>
+                    <a th:href="@{/agent/paiements}" class="btn btn-outline-success">
+                        <i class="bi bi-cash"></i> Voir les paiements
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Mon profil')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-person-gear"></i> Mon profil</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Mon espace &rsaquo; Profil</div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Header profil -->
+            <div class="col-12 fade-up">
+                <div class="profile-header">
+                    <div class="d-flex align-items-center gap-4">
+                        <div>
+                            <img th:if="${client.photo}"
+                                 th:src="@{/uploads/{photo}(photo=${client.photo})}"
+                                 class="profile-avatar" alt="Photo de profil">
+                            <div th:unless="${client.photo}" class="profile-avatar-placeholder">
+                                <span th:text="${#strings.substring(client.nom, 0, 1)}"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="fw-800 mb-1" th:text="${client.nom + ' ' + client.prenom}"></h2>
+                            <span class="badge" style="background:rgba(255,255,255,0.15);color:#93c5fd;font-size:0.82rem;padding:0.35rem 0.9rem;border-radius:20px;"
+                                  th:text="${client.typeClient}"></span>
+                            <div class="mt-2" style="color:rgba(255,255,255,0.65);font-size:0.875rem;">
+                                N° client : <strong style="color:#fff;" th:text="${client.numeroClient}"></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Infos détaillées -->
+            <div class="col-lg-6 fade-up delay-1">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-person-circle"></i> Informations personnelles</div>
+                    <div class="card-body">
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon"><i class="bi bi-person"></i></div>
+                            <div>
+                                <div class="text-muted" style="font-size:0.75rem;">Nom complet</div>
+                                <div class="fw-600" th:text="${client.nom + ' ' + client.prenom}"></div>
+                            </div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon"><i class="bi bi-envelope"></i></div>
+                            <div>
+                                <div class="text-muted" style="font-size:0.75rem;">Email</div>
+                                <div class="fw-600" th:text="${client.email}"></div>
+                            </div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon"><i class="bi bi-phone"></i></div>
+                            <div>
+                                <div class="text-muted" style="font-size:0.75rem;">Téléphone</div>
+                                <div class="fw-600" th:text="${client.telephone}"></div>
+                            </div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon"><i class="bi bi-geo-alt"></i></div>
+                            <div>
+                                <div class="text-muted" style="font-size:0.75rem;">Adresse</div>
+                                <div class="fw-600" th:text="${client.adresse}"></div>
+                            </div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon"><i class="bi bi-building"></i></div>
+                            <div>
+                                <div class="text-muted" style="font-size:0.75rem;">Type de client</div>
+                                <div class="fw-600" th:text="${client.typeClient}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-lg-6 fade-up delay-2">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-lightning-charge"></i> Actions rapides</div>
+                    <div class="card-body d-flex flex-column gap-2">
+                        <a th:href="@{/client/factures}" class="btn btn-outline-primary">
+                            <i class="bi bi-receipt"></i> Voir mes factures
+                        </a>
+                        <a th:href="@{/client/reclamations/new}" class="btn btn-outline-warning">
+                            <i class="bi bi-chat-dots"></i> Nouvelle réclamation
+                        </a>
+                        <a th:href="@{/client/branchement/new}" class="btn btn-outline-secondary">
+                            <i class="bi bi-pipe"></i> Demande de branchement
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

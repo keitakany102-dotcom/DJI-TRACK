@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Modifier le client')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+
+        <!-- ===== PAGE HEADER ===== -->
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-person-gear"></i> Modifier le client
+                </h1>
+                <div class="breadcrumb-custom">
+                    <i class="bi bi-house"></i> Admin &rsaquo; Clients &rsaquo;
+                    <span th:text="${client.nom + ' ' + client.prenom}"></span> &rsaquo; Modifier
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/clients/view/{id}(id=${client.id})}" class="btn btn-outline-secondary">
+                    <i class="bi bi-eye"></i> Voir la fiche
+                </a>
+                <a th:href="@{/admin/clients}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+
+        <!-- Alertes -->
+        <div th:if="${error}" class="alert alert-danger fade-up">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
+        </div>
+        <div th:if="${success}" class="alert alert-success fade-up">
+            <i class="bi bi-check-circle"></i> <span th:text="${success}"></span>
+        </div>
+
+        <form th:action="@{/admin/clients/save}" th:object="${client}"
+              method="post" enctype="multipart/form-data" id="editForm">
+            <input type="hidden" th:field="*{id}" />
+
+            <div class="row g-3">
+
+                <!-- ====== COLONNE GAUCHE : Avatar + statut ====== -->
+                <div class="col-lg-3">
+
+                    <!-- Avatar card -->
+                    <div class="card mb-3 fade-up" style="text-align:center;">
+                        <div class="card-body py-4">
+                            <!-- Aperçu photo actuelle -->
+                            <div id="avatarPreview" style="margin:0 auto 1rem;width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #e2e8f0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2563eb,#60a5fa);">
+                                <img th:if="${client.photo != null and !#strings.isEmpty(client.photo)}"
+                                     th:src="@{/uploads/{p}(p=${client.photo})}"
+                                     id="photoImg"
+                                     style="width:100%;height:100%;object-fit:cover;"
+                                     alt="Photo actuelle">
+                                <span th:unless="${client.photo != null and !#strings.isEmpty(client.photo)}"
+                                      id="avatarInitial"
+                                      style="font-size:2.5rem;font-weight:800;color:#fff;"
+                                      th:text="${#strings.substring(client.nom,0,1)}"></span>
+                            </div>
+
+                            <div class="fw-700 mb-1" style="font-size:1rem;" th:text="${client.nom + ' ' + client.prenom}"></div>
+                            <div class="text-muted mb-3" style="font-size:0.8rem;" th:text="'N° ' + ${client.numeroClient}"></div>
+
+                            <!-- Upload photo -->
+                            <label for="photoFile" class="btn btn-outline-secondary btn-sm w-100" style="cursor:pointer;">
+                                <i class="bi bi-camera"></i> Changer la photo
+                            </label>
+                            <input type="file" name="photoFile" id="photoFile"
+                                   class="d-none" accept="image/*" onchange="previewPhoto(this)">
+                            <div class="form-text mt-1">JPG, PNG — max 2 Mo</div>
+                        </div>
+                    </div>
+
+                    <!-- Statut & infos rapides -->
+                    <div class="card mb-3 fade-up delay-1">
+                        <div class="card-header"><i class="bi bi-info-circle"></i> Statut du compte</div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                                    <span class="text-muted" style="font-size:0.82rem;">Compte</span>
+                                    <span class="badge badge-status-active">Actif</span>
+                                </li>
+                                <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                                    <span class="text-muted" style="font-size:0.82rem;">Type</span>
+                                    <span class="badge badge-status-info" th:text="${client.typeClient}"></span>
+                                </li>
+                                <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                                    <span class="text-muted" style="font-size:0.82rem;">N° client</span>
+                                    <span class="fw-600" style="font-size:0.82rem;" th:text="${client.numeroClient}"></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="card fade-up delay-2">
+                        <div class="card-body d-flex flex-column gap-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-save"></i> Enregistrer
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+                            </button>
+                            <a th:href="@{/admin/clients/delete/{id}(id=${client.id})}"
+                               class="btn btn-outline-danger w-100"
+                               onclick="return confirm('Désactiver ce client ?')">
+                                <i class="bi bi-person-x"></i> Désactiver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== COLONNE DROITE : Formulaire ====== -->
+                <div class="col-lg-9">
+
+                    <!-- Section 1 : Informations personnelles -->
+                    <div class="card mb-3 fade-up">
+                        <div class="card-header">
+                            <i class="bi bi-person-circle"></i> Informations personnelles
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nom <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                                        <input type="text" th:field="*{nom}" class="form-control border-start-0 ps-0"
+                                               placeholder="Nom de famille" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                                        <input type="text" th:field="*{prenom}" class="form-control border-start-0 ps-0"
+                                               placeholder="Prénom" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-envelope text-muted"></i></span>
+                                        <input type="email" th:field="*{email}" class="form-control border-start-0 ps-0"
+                                               placeholder="email@exemple.com" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Téléphone <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-telephone text-muted"></i></span>
+                                        <input type="text" th:field="*{telephone}" class="form-control border-start-0 ps-0"
+                                               placeholder="+223 XX XX XX XX" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Adresse <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-geo-alt text-muted"></i></span>
+                                        <input type="text" th:field="*{adresse}" class="form-control border-start-0 ps-0"
+                                               placeholder="Adresse complète" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Type de client <span class="text-danger">*</span></label>
+                                    <select th:field="*{typeClient}" class="form-select">
+                                        <option th:each="t : ${T(com.Somagep.entity.TypeClient).values()}"
+                                                th:value="${t}" th:text="${t}">PARTICULIER</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2 : Connexion -->
+                    <div class="card mb-3 fade-up delay-1">
+                        <div class="card-header">
+                            <i class="bi bi-shield-lock"></i> Informations de connexion
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-3" style="font-size:0.83rem;">
+                                <i class="bi bi-info-circle"></i>
+                                Laissez le mot de passe vide pour conserver l'actuel. Seul un nouveau mot de passe sera haché et sauvegardé.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nom d'utilisateur <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-at text-muted"></i></span>
+                                        <input type="text" name="username"
+                                               th:value="${client.user != null ? client.user.username : ''}"
+                                               class="form-control border-start-0 ps-0"
+                                               placeholder="Identifiant" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Nouveau mot de passe</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-lock text-muted"></i></span>
+                                        <input type="password" name="password" id="pwdInput"
+                                               class="form-control border-start-0 ps-0"
+                                               placeholder="Laisser vide pour ne pas changer">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="togglePwd()" title="Afficher/masquer">
+                                            <i class="bi bi-eye" id="pwdEyeIcon"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Barre de force -->
+                                    <div class="mt-2" id="pwdStrengthBar" style="display:none;">
+                                        <div style="height:4px;border-radius:4px;background:#e2e8f0;overflow:hidden;">
+                                            <div id="pwdStrengthFill" style="height:100%;width:0;transition:all 0.3s;border-radius:4px;"></div>
+                                        </div>
+                                        <div id="pwdStrengthLabel" class="form-text mt-1"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3 : Compteurs (lecture seule) -->
+                    <div class="card fade-up delay-2" th:if="${client.compteurs != null and !#lists.isEmpty(client.compteurs)}">
+                        <div class="card-header">
+                            <i class="bi bi-speedometer"></i> Compteurs associés
+                            <span class="ms-auto badge" style="background:#eff6ff;color:#2563eb;font-size:0.72rem;"
+                                  th:text="${#lists.size(client.compteurs)}"></span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                <tr>
+                                    <th>N° Série</th>
+                                    <th>Type</th>
+                                    <th>Localisation</th>
+                                    <th>Statut</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="c : ${client.compteurs}">
+                                    <td class="fw-600" th:text="${c.numeroSerie}"></td>
+                                    <td class="text-muted" th:text="${c.typeCompteur}"></td>
+                                    <td class="text-muted" th:text="${c.localisation}"></td>
+                                    <td>
+                                        <span th:if="${c.actif}"    class="badge badge-status-active">Actif</span>
+                                        <span th:unless="${c.actif}" class="badge badge-status-inactive">Inactif</span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer">
+                            <small class="text-muted"><i class="bi bi-lock me-1"></i>Les compteurs sont gérés séparément</small>
+                        </div>
+                    </div>
+
+                </div><!-- /col-lg-9 -->
+            </div><!-- /row -->
+
+            <!-- Boutons bas de page -->
+            <div class="d-flex justify-content-end gap-2 mt-3 fade-up">
+                <a th:href="@{/admin/clients}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Annuler
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-save"></i> Enregistrer les modifications
+                </button>
+            </div>
+
+        </form>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+
+<script>
+    /* ---- Aperçu photo ---- */
+    function previewPhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('avatarPreview');
+            preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;" alt="Aperçu">';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    /* ---- Afficher/masquer mot de passe ---- */
+    function togglePwd() {
+        const inp  = document.getElementById('pwdInput');
+        const icon = document.getElementById('pwdEyeIcon');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            icon.className = 'bi bi-eye-slash';
+        } else {
+            inp.type = 'password';
+            icon.className = 'bi bi-eye';
+        }
+    }
+
+    /* ---- Force du mot de passe ---- */
+    document.getElementById('pwdInput').addEventListener('input', function() {
+        const val = this.value;
+        const bar   = document.getElementById('pwdStrengthBar');
+        const fill  = document.getElementById('pwdStrengthFill');
+        const label = document.getElementById('pwdStrengthLabel');
+
+        if (!val) { bar.style.display = 'none'; return; }
+        bar.style.display = 'block';
+
+        let score = 0;
+        if (val.length >= 8)              score++;
+        if (/[A-Z]/.test(val))           score++;
+        if (/[0-9]/.test(val))           score++;
+        if (/[^A-Za-z0-9]/.test(val))    score++;
+
+        const levels = [
+            { pct: '25%', color: '#dc2626', text: 'Très faible' },
+            { pct: '50%', color: '#d97706', text: 'Faible'      },
+            { pct: '75%', color: '#2563eb', text: 'Moyen'       },
+            { pct: '100%',color: '#16a34a', text: 'Fort'        },
+        ];
+        const lvl = levels[score - 1] || levels[0];
+        fill.style.width = lvl.pct;
+        fill.style.background = lvl.color;
+        label.textContent = lvl.text;
+        label.style.color = lvl.color;
+    });
+
+    /* ---- Confirmation quitter sans sauvegarder ---- */
+    let formChanged = false;
+    document.getElementById('editForm').addEventListener('change', () => { formChanged = true; });
+    window.addEventListener('beforeunload', function(e) {
+        if (formChanged) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    document.getElementById('editForm').addEventListener('submit', () => { formChanged = false; });
+</script>
+</body>
+</html>

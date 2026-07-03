@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Relevés')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-clipboard-data"></i> Relevés</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Agent &rsaquo; Relevés</div>
+            </div>
+        </div>
+
+        <div class="table-card fade-up">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>N° Compteur</th>
+                        <th>Client</th>
+                        <th>Index (m³)</th>
+                        <th>Date relevé</th>
+                        <th>Agent</th>
+                        <th>Statut</th>
+                        <th style="width:140px;">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${releves}">
+                        <td><span class="fw-600" th:text="${r.compteur.numeroSerie}"></span></td>
+                        <td th:text="${r.compteur.client.nom + ' ' + r.compteur.client.prenom}"></td>
+                        <td><strong th:text="${r.indexReleve}"></strong></td>
+                        <td class="text-muted" th:text="${#dates.format(r.dateReleve, 'dd/MM/yyyy')}"></td>
+                        <td class="text-muted" th:text="${r.agent.username}"></td>
+                        <td>
+                            <span th:if="${r.valide}" class="badge badge-status-active">
+                                <i class="bi bi-check-circle me-1"></i> Validé
+                            </span>
+                            <span th:unless="${r.valide}" class="badge badge-status-pending">
+                                <i class="bi bi-clock me-1"></i> En attente
+                            </span>
+                        </td>
+                        <td>
+                            <a th:href="@{/agent/releves/new/{id}(id=${r.compteur.id})}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Nouveau relevé
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

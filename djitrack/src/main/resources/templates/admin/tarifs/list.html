@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Tarifs')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-tags"></i> Grille tarifaire</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Admin &rsaquo; Tarifs</div>
+            </div>
+            <a th:href="@{/admin/tarifs/create}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nouveau tarif
+            </a>
+        </div>
+
+        <div class="table-card fade-up">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Type client</th>
+                        <th>Borne inférieure (m³)</th>
+                        <th>Borne supérieure (m³)</th>
+                        <th>Prix / m³</th>
+                        <th style="width:100px;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="t : ${tarifs}">
+                        <td><span class="badge badge-status-info" th:text="${t.typeClient}"></span></td>
+                        <td th:text="${t.borneInferieure} + ' m³'"></td>
+                        <td th:text="${t.borneSuperieure} + ' m³'"></td>
+                        <td>
+                            <strong class="text-primary" th:text="${#numbers.formatDecimal(t.prixParM3, 1, 2)} + ' FCFA'"></strong>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a th:href="@{/admin/tarifs/edit/{id}(id=${t.id})}" class="btn btn-icon btn-primary btn-sm" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a th:href="@{/admin/tarifs/delete/{id}(id=${t.id})}" class="btn btn-icon btn-danger btn-sm" title="Supprimer"
+                                   onclick="return confirm('Supprimer ce tarif ?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(tarifs)}">
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-tags"></i>
+                                <p>Aucun tarif défini</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

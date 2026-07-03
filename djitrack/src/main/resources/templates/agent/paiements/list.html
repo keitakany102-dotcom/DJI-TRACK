@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Paiements')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-cash-coin"></i> Paiements encaissés</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Agent &rsaquo; Paiements</div>
+            </div>
+        </div>
+
+        <div class="table-card fade-up">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Client</th>
+                        <th>N° Facture</th>
+                        <th>Montant</th>
+                        <th>Mode</th>
+                        <th>Date</th>
+                        <th>QR</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${paiements}">
+                        <td><span class="fw-600 text-primary" th:text="${p.reference}"></span></td>
+                        <td th:text="${p.facture.client.nom + ' ' + p.facture.client.prenom}"></td>
+                        <td class="text-muted" th:text="${p.facture.numeroFacture}"></td>
+                        <td>
+                            <strong class="text-success" th:text="${#numbers.formatDecimal(p.montant, 1, 2)} + ' FCFA'"></strong>
+                        </td>
+                        <td><span class="badge badge-status-info" th:text="${p.mode}"></span></td>
+                        <td class="text-muted" th:text="${#dates.format(p.datePaiement, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <span th:if="${p.qrCode != null}" class="text-success">
+                                <i class="bi bi-qr-code-scan fs-5"></i>
+                            </span>
+                            <span th:unless="${p.qrCode != null}" class="text-muted">—</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(paiements)}">
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-cash"></i>
+                                <p>Aucun paiement enregistré</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

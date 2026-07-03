@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Agence - Formulaire')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-building-add"></i>
+                    <span th:if="${agence != null and agence.id != null}">Modifier l'agence</span>
+                    <span th:unless="${agence != null and agence.id != null}">Nouvelle agence</span>
+                </h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Admin &rsaquo; Agences &rsaquo; Formulaire</div>
+            </div>
+            <a th:href="@{/admin/agences}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger fade-up">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
+        </div>
+
+        <div class="card fade-up" style="max-width:700px;">
+            <div class="card-header">
+                <i class="bi bi-building"></i> Informations de l'agence
+            </div>
+            <div class="card-body">
+                <form th:action="@{/admin/agences/save}" th:object="${agence}" method="post">
+                    <input type="hidden" th:field="*{id}" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nom de l'agence *</label>
+                            <input type="text" th:field="*{nom}" class="form-control" placeholder="Ex: Agence Centre" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" th:field="*{telephone}" class="form-control" placeholder="+223 XX XX XX XX">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Adresse *</label>
+                            <input type="text" th:field="*{adresse}" class="form-control" placeholder="Adresse complète de l'agence" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Horaires d'ouverture</label>
+                            <input type="text" th:field="*{horaires}" class="form-control" placeholder="Lundi - Vendredi : 8h00 - 17h00">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Enregistrer
+                        </button>
+                        <a th:href="@{/admin/agences}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

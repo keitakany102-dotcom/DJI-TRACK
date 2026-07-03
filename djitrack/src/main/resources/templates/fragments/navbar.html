@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-lg" th:fragment="navbar" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <div class="brand-icon"><i class="bi bi-droplet-fill"></i></div>
+            Djitrack
+        </a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="color:rgba(255,255,255,0.7)">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center gap-2">
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <div class="user-info">
+                        <div class="avatar-circle">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <span sec:authentication="name"></span>
+                        <span class="badge bg-secondary ms-1" style="background:#1e3a5f!important;color:#93c5fd!important;font-size:0.7rem;" sec:authentication="principal.authorities"></span>
+                    </div>
+                </li>
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="nav-link btn-logout" href="/logout">
+                        <i class="bi bi-box-arrow-right"></i> Déconnexion
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

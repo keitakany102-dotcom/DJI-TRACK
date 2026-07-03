@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Mon espace')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-house-door"></i> Mon espace</h1>
+                <div class="breadcrumb-custom">
+                    Bonjour, <strong th:text="${client.prenom + ' ' + client.nom}"></strong> ! Bienvenue sur votre espace client.
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-4 fade-up delay-1">
+                <div class="stat-card stat-danger">
+                    <div class="stat-icon"><i class="bi bi-receipt-cutoff"></i></div>
+                    <div class="stat-label">Factures impayées</div>
+                    <div class="stat-value" th:text="${#lists.size(factures.?[statut == 'impayée'])}">0</div>
+                    <div class="stat-trend"><i class="bi bi-exclamation-circle"></i> À régler</div>
+                </div>
+            </div>
+            <div class="col-sm-4 fade-up delay-2">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+                    <div class="stat-label">Total factures</div>
+                    <div class="stat-value" th:text="${#lists.size(factures)}">0</div>
+                    <div class="stat-trend"><i class="bi bi-calendar3"></i> Depuis votre inscription</div>
+                </div>
+            </div>
+            <div class="col-sm-4 fade-up delay-3">
+                <div class="stat-card stat-info">
+                    <div class="stat-icon"><i class="bi bi-chat-dots-fill"></i></div>
+                    <div class="stat-label">Réclamations ouvertes</div>
+                    <div class="stat-value" th:text="${#lists.size(reclamations.?[statut == 'ouverte'])}">0</div>
+                    <div class="stat-trend"><i class="bi bi-clock"></i> En cours de traitement</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 fade-up">
+            <!-- Dernières factures -->
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-receipt"></i> Dernières factures</div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>N° Facture</th>
+                                <th>Montant TTC</th>
+                                <th>Statut</th>
+                                <th>PDF</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="f, iter : ${factures}" th:if="${iter.index < 5}">
+                                <td class="fw-600" th:text="${f.numeroFacture}"></td>
+                                <td><strong th:text="${#numbers.formatDecimal(f.montantTTC, 1, 2)} + ' FCFA'"></strong></td>
+                                <td>
+                                    <span th:if="${f.statut == 'payée'}" class="badge badge-status-active">Payée</span>
+                                    <span th:if="${f.statut == 'impayée'}" class="badge badge-status-inactive">Impayée</span>
+                                    <span th:if="${f.statut == 'partielle'}" class="badge badge-status-pending">Partielle</span>
+                                </td>
+                                <td>
+                                    <a th:href="@{/api/factures/pdf/{id}(id=${f.id})}" target="_blank"
+                                       class="btn btn-icon btn-outline-secondary btn-sm" title="Télécharger PDF">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(factures)}">
+                                <td colspan="4">
+                                    <div class="empty-state py-3">
+                                        <i class="bi bi-receipt" style="font-size:2rem;"></i>
+                                        <p>Aucune facture</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <a th:href="@{/client/factures}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-list"></i> Toutes mes factures
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Réclamations -->
+            <div class="col-lg-5">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-chat-dots"></i> Mes réclamations</div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li th:each="r : ${reclamations}"
+                                class="list-group-item d-flex justify-content-between align-items-center px-4 py-3">
+                                <div>
+                                    <div class="fw-600" style="font-size:0.875rem;" th:text="${r.type}"></div>
+                                    <div class="text-muted" style="font-size:0.78rem;"
+                                         th:text="${#dates.format(r.dateCreation,'dd/MM/yyyy')}"></div>
+                                </div>
+                                <span class="badge"
+                                      th:classappend="${r.statut == 'ouverte' ? 'badge-status-pending' : r.statut == 'en cours' ? 'badge-status-info' : 'badge-status-active'}"
+                                      th:text="${r.statut}"></span>
+                            </li>
+                            <li th:if="${#lists.isEmpty(reclamations)}" class="list-group-item">
+                                <div class="empty-state py-3">
+                                    <i class="bi bi-chat" style="font-size:2rem;"></i>
+                                    <p>Aucune réclamation</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-footer">
+                        <a th:href="@{/client/reclamations/new}" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-plus-circle"></i> Nouvelle réclamation
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="card mt-3 fade-up">
+            <div class="card-body py-3">
+                <div class="d-flex flex-wrap gap-2">
+                    <a th:href="@{/client/branchement/new}" class="btn btn-outline-secondary">
+                        <i class="bi bi-pipe"></i> Demander un branchement
+                    </a>
+                    <a th:href="@{/client/profil}" class="btn btn-outline-secondary">
+                        <i class="bi bi-person-gear"></i> Mon profil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

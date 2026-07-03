@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Rapport d\'intervention')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-tools"></i> Rapport d'intervention</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Agent &rsaquo; Interventions &rsaquo; Rapport</div>
+            </div>
+            <a th:href="@{/agent/interventions}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger fade-up">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
+        </div>
+
+        <div class="card fade-up">
+            <div class="card-header"><i class="bi bi-clipboard-check"></i> Rédiger le rapport</div>
+            <div class="card-body">
+                <form th:action="@{/agent/interventions/save}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="interventionId" th:value="${interventionId}">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Description de l'intervention *</label>
+                            <textarea name="description" class="form-control" rows="4" required
+                                      placeholder="Décrivez les travaux effectués..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Rapport technique</label>
+                            <textarea name="rapport" class="form-control" rows="4"
+                                      placeholder="Détails techniques, matériaux utilisés..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Statut *</label>
+                            <select name="statut" class="form-select" required>
+                                <option value="EN_COURS">En cours</option>
+                                <option value="TERMINEE">Terminée</option>
+                                <option value="SUSPENDUE">Suspendue</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Géolocalisation GPS</label>
+                            <div class="input-group">
+                                <input type="text" name="localisationGPS" class="form-control" placeholder="latitude, longitude">
+                                <button type="button" class="btn btn-outline-secondary" onclick="getLocation()">
+                                    <i class="bi bi-geo-alt"></i> Ma position
+                                </button>
+                            </div>
+                            <div class="form-text">Cliquez sur "Ma position" pour remplir automatiquement</div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">
+                        <i class="bi bi-images"></i> Photos
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Photo avant intervention</label>
+                            <input type="file" name="photoAvant" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Photo après intervention</label>
+                            <input type="file" name="photoApres" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Enregistrer le rapport
+                        </button>
+                        <a th:href="@{/agent/interventions}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+<script>
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            document.querySelector('[name=localisationGPS]').value =
+                pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6);
+        });
+    }
+}
+</script>
+</body>
+</html>

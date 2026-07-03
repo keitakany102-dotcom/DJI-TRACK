@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Agences')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-building"></i> Agences</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Admin &rsaquo; Agences</div>
+            </div>
+            <a th:href="@{/admin/agences/create}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nouvelle agence
+            </a>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success fade-up">
+            <i class="bi bi-check-circle"></i> <span th:text="${success}"></span>
+        </div>
+
+        <div class="table-card fade-up delay-1">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Nom de l'agence</th>
+                        <th>Adresse</th>
+                        <th>Téléphone</th>
+                        <th>Horaires</th>
+                        <th style="width:100px;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="a : ${agences}">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:36px;height:36px;border-radius:10px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                <span class="fw-600" th:text="${a.nom}"></span>
+                            </div>
+                        </td>
+                        <td class="text-muted" th:text="${a.adresse}"></td>
+                        <td th:text="${a.telephone}"></td>
+                        <td>
+                            <span class="badge badge-status-info" th:text="${a.horaires}"></span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a th:href="@{/admin/agences/edit/{id}(id=${a.id})}" class="btn btn-icon btn-primary btn-sm" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a th:href="@{/admin/agences/delete/{id}(id=${a.id})}" class="btn btn-icon btn-danger btn-sm" title="Supprimer"
+                                   onclick="return confirm('Supprimer cette agence ?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(agences)}">
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-building-slash"></i>
+                                <p>Aucune agence enregistrée</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

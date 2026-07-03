@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Mes factures')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-receipt"></i> Mes factures</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Mon espace &rsaquo; Factures</div>
+            </div>
+        </div>
+
+        <div class="table-card fade-up">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>N° Facture</th>
+                        <th>Date émission</th>
+                        <th>Échéance</th>
+                        <th>Consommation</th>
+                        <th>Montant TTC</th>
+                        <th>Statut</th>
+                        <th style="width:120px;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="f : ${factures}">
+                        <td class="fw-600 text-primary" th:text="${f.numeroFacture}"></td>
+                        <td class="text-muted" th:text="${#dates.format(f.dateEmission, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${#dates.format(f.dateEcheance, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${f.consommation} + ' m³'"></td>
+                        <td><strong th:text="${f.montantTTC} + ' FCFA'"></strong></td>
+                        <td>
+                            <span th:if="${f.statut == 'payée'}" class="badge badge-status-active">Payée</span>
+                            <span th:if="${f.statut == 'impayée'}" class="badge badge-status-inactive">Impayée</span>
+                            <span th:if="${f.statut == 'partielle'}" class="badge badge-status-pending">Partielle</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a th:href="@{/api/factures/pdf/{id}(id=${f.id})}" target="_blank"
+                                   class="btn btn-icon btn-outline-secondary btn-sm" title="Télécharger PDF">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                                <a th:if="${f.statut != 'payée'}" th:href="@{/client/paiement/{id}(id=${f.id})}"
+                                   class="btn btn-success btn-sm">
+                                    <i class="bi bi-cash"></i> Payer
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(factures)}">
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="bi bi-receipt"></i>
+                                <p>Aucune facture disponible</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

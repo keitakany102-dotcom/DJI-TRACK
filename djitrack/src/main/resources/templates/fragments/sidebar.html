@@ -1,83 +1,76 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<div th:fragment="sidebar" class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-        <div class="brand-icon">
-            <i class="fas fa-water"></i>
-        </div>
-        <h3>DJI<span>Track</span></h3>
-    </div>
-
-    <nav class="sidebar-nav">
-        <div class="nav-label">Menu Principal</div>
-
-        <div class="nav-item">
-            <a th:href="@{/dashboard}" class="nav-link" th:classappend="${currentPage == 'dashboard'} ? 'active' : ''">
-                <i class="fas fa-th-large"></i>
-                <span>Tableau de bord</span>
-            </a>
-        </div>
-
-        <div class="nav-item">
-            <a th:href="@{/abonnes}" class="nav-link" th:classappend="${currentPage == 'abonnes'} ? 'active' : ''">
-                <i class="fas fa-users"></i>
-                <span>Abonnés</span>
-            </a>
-        </div>
-
-        <div class="nav-item">
-            <a th:href="@{/releves}" class="nav-link" th:classappend="${currentPage == 'releves'} ? 'active' : ''">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Relevés</span>
-            </a>
-        </div>
-
-        <div class="nav-item">
-            <a th:href="@{/factures}" class="nav-link" th:classappend="${currentPage == 'factures'} ? 'active' : ''">
-                <i class="fas fa-file-invoice"></i>
-                <span>Factures</span>
-                <span class="badge" id="factureBadge">0</span>
-            </a>
+<div th:fragment="sidebar" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <nav id="sidebar">
+        <!-- ADMIN -->
+        <div sec:authorize="hasRole('ADMIN')">
+            <p class="sidebar-section">Administration</p>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/dashboard}">
+                        <i class="bi bi-speedometer2"></i> Tableau de bord
+                    </a>
+                </li>
+            </ul>
+            <hr class="sidebar-divider">
+            <p class="sidebar-section">Gestion</p>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/clients}"><i class="bi bi-people"></i> Clients</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/users}"><i class="bi bi-person-badge"></i> Utilisateurs</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/agences}"><i class="bi bi-building"></i> Agences</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/tarifs}"><i class="bi bi-tags"></i> Tarifs</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/admin/rapports}"><i class="bi bi-file-earmark-bar-graph"></i> Rapports</a>
+                </li>
+            </ul>
         </div>
 
-        <div class="nav-item">
-            <a th:href="@{/paiements}" class="nav-link" th:classappend="${currentPage == 'paiements'} ? 'active' : ''">
-                <i class="fas fa-credit-card"></i>
-                <span>Paiements</span>
-            </a>
+        <!-- AGENT -->
+        <div sec:authorize="hasAnyRole('ADMIN','AGENT')">
+            <hr class="sidebar-divider">
+            <p class="sidebar-section">Terrain</p>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/agent/dashboard}"><i class="bi bi-person-badge"></i> Espace agent</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/agent/releves}"><i class="bi bi-clipboard-data"></i> Relevés</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/agent/interventions}"><i class="bi bi-tools"></i> Interventions</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/agent/paiements}"><i class="bi bi-cash"></i> Paiements</a>
+                </li>
+            </ul>
         </div>
 
-        <div class="nav-item">
-            <a th:href="@{/reclamations}" class="nav-link" th:classappend="${currentPage == 'reclamations'} ? 'active' : ''">
-                <i class="fas fa-headset"></i>
-                <span>Réclamations</span>
-                <span class="badge" id="reclamationBadge">0</span>
-            </a>
-        </div>
-
-        <div class="nav-item">
-            <a th:href="@{/rapports}" class="nav-link" th:classappend="${currentPage == 'rapports'} ? 'active' : ''">
-                <i class="fas fa-chart-bar"></i>
-                <span>Rapports</span>
-            </a>
-        </div>
-
-        <div th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
-            <div class="nav-label" style="margin-top: 20px;">Administration</div>
-
-            <div class="nav-item">
-                <a th:href="@{/admin/dashboard}" class="nav-link" th:classappend="${currentPage == 'admin-dashboard'} ? 'active' : ''">
-                    <i class="fas fa-cog"></i>
-                    <span>Admin Dashboard</span>
-                </a>
-            </div>
-
-            <div class="nav-item">
-                <a th:href="@{/admin/users}" class="nav-link" th:classappend="${currentPage == 'admin-users'} ? 'active' : ''">
-                    <i class="fas fa-user-shield"></i>
-                    <span>Gestion utilisateurs</span>
-                </a>
-            </div>
+        <!-- CLIENT -->
+        <div sec:authorize="hasRole('CLIENT')">
+            <p class="sidebar-section">Mon espace</p>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/client/dashboard}"><i class="bi bi-house-door"></i> Tableau de bord</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/client/factures}"><i class="bi bi-receipt"></i> Mes factures</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/client/reclamations/new}"><i class="bi bi-chat-dots"></i> Réclamation</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/client/branchement/new}"><i class="bi bi-pipe"></i> Branchement</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/client/profil}"><i class="bi bi-person-gear"></i> Mon profil</a>
+                </li>
+            </ul>
         </div>
     </nav>
 </div>

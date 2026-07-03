@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Tarif - Formulaire')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-tag-fill"></i>
+                    <span th:if="${tarif != null and tarif.id != null}">Modifier le tarif</span>
+                    <span th:unless="${tarif != null and tarif.id != null}">Nouveau tarif</span>
+                </h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Admin &rsaquo; Tarifs &rsaquo; Formulaire</div>
+            </div>
+            <a th:href="@{/admin/tarifs}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger fade-up">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
+        </div>
+
+        <div class="card fade-up" style="max-width:700px;">
+            <div class="card-header">
+                <i class="bi bi-tags"></i> Paramètres du tarif
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle"></i>
+                    Les tarifs sont définis par tranche de consommation (en m³) pour chaque type de client.
+                </div>
+                <form th:action="@{/admin/tarifs/save}" th:object="${tarif}" method="post">
+                    <input type="hidden" th:field="*{id}" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Type de client *</label>
+                            <select th:field="*{typeClient}" class="form-select" required>
+                                <option value="">-- Choisir --</option>
+                                <option value="PARTICULIER">Particulier</option>
+                                <option value="ENTREPRISE">Entreprise</option>
+                                <option value="ADMINISTRATION">Administration</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Borne inférieure (m³) *</label>
+                            <input type="number" step="0.01" min="0" th:field="*{borneInferieure}"
+                                   class="form-control" placeholder="0" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Borne supérieure (m³) *</label>
+                            <input type="number" step="0.01" min="0" th:field="*{borneSuperieure}"
+                                   class="form-control" placeholder="10" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Prix par m³ (FCFA) *</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" th:field="*{prixParM3}"
+                                       class="form-control" placeholder="500" required>
+                                <span class="input-group-text">FCFA</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Enregistrer
+                        </button>
+                        <a th:href="@{/admin/tarifs}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

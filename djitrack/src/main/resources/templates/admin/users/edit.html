@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Modifier utilisateur')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+  <div th:replace="fragments/sidebar :: sidebar"></div>
+  <main>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header fade-up">
+      <div>
+        <h1 class="page-title">
+          <i class="bi bi-person-gear"></i> Modifier l'utilisateur
+        </h1>
+        <div class="breadcrumb-custom">
+          <i class="bi bi-house"></i> Admin &rsaquo; Utilisateurs &rsaquo;
+          <span th:text="${user.nom + ' ' + user.prenom}"></span> &rsaquo; Modifier
+        </div>
+      </div>
+      <a th:href="@{/admin/users}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+      </a>
+    </div>
+
+    <!-- Alertes -->
+    <div th:if="${error}" class="alert alert-danger fade-up">
+      <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
+    </div>
+    <div th:if="${success}" class="alert alert-success fade-up">
+      <i class="bi bi-check-circle"></i> <span th:text="${success}"></span>
+    </div>
+
+    <form th:action="@{/admin/users/save}" th:object="${user}"
+          method="post" id="editUserForm">
+      <input type="hidden" th:field="*{id}" />
+
+      <div class="row g-3">
+
+        <!-- ====== COLONNE GAUCHE ====== -->
+        <div class="col-lg-3">
+
+          <!-- Avatar + nom -->
+          <div class="card mb-3 fade-up" style="text-align:center;">
+            <div class="card-body py-4">
+              <div style="width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:800;color:#fff;margin:0 auto 1rem;border:3px solid #e2e8f0;">
+                <span th:text="${#strings.substring(user.nom, 0, 1)}"></span>
+              </div>
+              <div class="fw-700 mb-1" style="font-size:0.95rem;" th:text="${user.nom + ' ' + user.prenom}"></div>
+              <div class="text-muted mb-2" style="font-size:0.78rem;" th:text="'@' + ${user.username}"></div>
+              <span th:if="${user.enabled}"
+                    class="badge badge-status-active">
+                                <i class="bi bi-circle-fill me-1" style="font-size:0.45rem;vertical-align:middle;"></i> Actif
+                            </span>
+              <span th:unless="${user.enabled}"
+                    class="badge badge-status-inactive">
+                                <i class="bi bi-circle-fill me-1" style="font-size:0.45rem;vertical-align:middle;"></i> Désactivé
+                            </span>
+            </div>
+          </div>
+
+          <!-- Infos rapides -->
+          <div class="card mb-3 fade-up delay-1">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Détails</div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                  <span class="text-muted" style="font-size:0.8rem;">ID</span>
+                  <span class="fw-600" style="font-size:0.8rem;" th:text="'#' + ${user.id}"></span>
+                </li>
+                <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                  <span class="text-muted" style="font-size:0.8rem;">Rôle actuel</span>
+                  <span class="badge badge-role" th:text="${user.role}"></span>
+                </li>
+                <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
+                  <span class="text-muted" style="font-size:0.8rem;">Statut</span>
+                  <span th:if="${user.enabled}"    class="badge badge-status-active">Actif</span>
+                  <span th:unless="${user.enabled}" class="badge badge-status-inactive">Désactivé</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Actions rapides -->
+          <div class="card fade-up delay-2">
+            <div class="card-body d-flex flex-column gap-2">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-save"></i> Enregistrer
+              </button>
+              <button type="reset" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+              </button>
+              <a th:href="@{/admin/users/delete/{id}(id=${user.id})}"
+                 class="btn btn-outline-danger w-100"
+                 onclick="return confirm('Désactiver cet utilisateur ?')">
+                <i class="bi bi-person-x"></i> Désactiver
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== COLONNE DROITE ====== -->
+        <div class="col-lg-9">
+
+          <!-- Section 1 : Identité -->
+          <div class="card mb-3 fade-up">
+            <div class="card-header">
+              <i class="bi bi-person-vcard"></i> Identité
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Nom <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                    <input type="text" th:field="*{nom}"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Nom de famille" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                    <input type="text" th:field="*{prenom}"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Prénom" required>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label">Email <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-envelope text-muted"></i></span>
+                    <input type="email" th:field="*{email}"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="adresse@exemple.com" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2 : Connexion & rôle -->
+          <div class="card mb-3 fade-up delay-1">
+            <div class="card-header">
+              <i class="bi bi-shield-lock"></i> Connexion &amp; rôle
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <!-- Username -->
+                <div class="col-md-6">
+                  <label class="form-label">Nom d'utilisateur <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-at text-muted"></i></span>
+                    <input type="text" th:field="*{username}"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Identifiant unique" required>
+                  </div>
+                </div>
+
+                <!-- Rôle avec aperçu visuel -->
+                <div class="col-md-6">
+                  <label class="form-label">Rôle <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-tag text-muted"></i></span>
+                    <select name="role" id="roleSelect"
+                            class="form-select border-start-0 ps-1" required
+                            onchange="updateRoleBadge(this)">
+                      <option th:each="r : ${roles}"
+                              th:value="${r}"
+                              th:text="${r}"
+                              th:selected="${r == user.role}"></option>
+                    </select>
+                  </div>
+                  <!-- Badge de prévisualisation du rôle -->
+                  <div class="mt-2">
+                    <span id="roleBadgePreview" class="badge badge-role" th:text="${user.role}"></span>
+                    <span class="form-text ms-2" id="roleDesc"></span>
+                  </div>
+                </div>
+
+                <!-- Mot de passe -->
+                <div class="col-md-6">
+                  <label class="form-label">Nouveau mot de passe</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-lock text-muted"></i></span>
+                    <input type="password" name="password" id="pwdInput"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Laisser vide pour conserver l'actuel">
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="togglePwd()" title="Afficher/masquer">
+                      <i class="bi bi-eye" id="pwdEyeIcon"></i>
+                    </button>
+                  </div>
+                  <div class="mt-2" id="pwdStrengthBar" style="display:none;">
+                    <div style="height:4px;border-radius:4px;background:#e2e8f0;overflow:hidden;">
+                      <div id="pwdStrengthFill" style="height:100%;width:0;transition:all 0.3s;border-radius:4px;"></div>
+                    </div>
+                    <div id="pwdStrengthLabel" class="form-text mt-1"></div>
+                  </div>
+                </div>
+
+                <!-- Confirmation mot de passe -->
+                <div class="col-md-6">
+                  <label class="form-label">Confirmer le mot de passe</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-lock-fill text-muted"></i></span>
+                    <input type="password" name="passwordConfirm" id="pwdConfirm"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Retapez le nouveau mot de passe"
+                           oninput="checkMatch()">
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="togglePwdConfirm()" title="Afficher/masquer">
+                      <i class="bi bi-eye" id="pwdConfirmEyeIcon"></i>
+                    </button>
+                  </div>
+                  <div id="matchMsg" class="form-text mt-1" style="display:none;"></div>
+                </div>
+
+                <!-- Statut actif -->
+                <div class="col-12">
+                  <div class="d-flex align-items-center gap-3 p-3"
+                       style="background:#f8fafc;border-radius:var(--radius-sm);border:1px solid #e2e8f0;">
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" role="switch"
+                             id="enabledSwitch" name="enabled"
+                             th:checked="${user.enabled}"
+                             style="width:2.5em;height:1.25em;">
+                      <label class="form-check-label fw-600 ms-2" for="enabledSwitch">
+                        Compte actif
+                      </label>
+                    </div>
+                    <span class="text-muted" style="font-size:0.82rem;">
+                                            Un compte désactivé ne peut plus se connecter à l'application.
+                                        </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Info mot de passe -->
+              <div class="alert alert-info mt-3 mb-0" style="font-size:0.82rem;">
+                <i class="bi bi-info-circle"></i>
+                Laissez les champs mot de passe vides pour conserver le mot de passe actuel.
+                Un nouveau mot de passe doit comporter au moins 8 caractères.
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3 : Permissions par rôle (lecture seule, informatif) -->
+          <div class="card fade-up delay-2">
+            <div class="card-header">
+              <i class="bi bi-key"></i> Permissions du rôle sélectionné
+            </div>
+            <div class="card-body p-0">
+              <div id="permAdmin" class="perm-block" style="display:none;">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Accès complet au tableau de bord</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Gestion des clients, agences, tarifs</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Gestion des utilisateurs et rôles</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Accès aux rapports et exports</span>
+                  </li>
+                </ul>
+              </div>
+              <div id="permAgent" class="perm-block" style="display:none;">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Saisie des relevés de compteurs</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Gestion des interventions terrain</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Encaissement des paiements</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-x-circle-fill text-danger"></i>
+                    <span style="font-size:0.875rem;">Pas d'accès à l'administration</span>
+                  </li>
+                </ul>
+              </div>
+              <div id="permClient" class="perm-block" style="display:none;">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Consultation de ses factures</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Soumission de réclamations</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span style="font-size:0.875rem;">Demande de branchement</span>
+                  </li>
+                  <li class="list-group-item px-4 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-x-circle-fill text-danger"></i>
+                    <span style="font-size:0.875rem;">Pas d'accès à l'administration ni au terrain</span>
+                  </li>
+                </ul>
+              </div>
+              <div id="permDefault" class="px-4 py-3">
+                <span class="text-muted" style="font-size:0.875rem;">Sélectionnez un rôle pour voir ses permissions.</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /col-lg-9 -->
+      </div><!-- /row -->
+
+      <!-- Boutons bas de page -->
+      <div class="d-flex justify-content-end gap-2 mt-3 fade-up">
+        <a th:href="@{/admin/users}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Annuler
+        </a>
+        <button type="submit" class="btn btn-primary px-4" id="submitBtn">
+          <i class="bi bi-save"></i> Enregistrer les modifications
+        </button>
+      </div>
+
+    </form>
+  </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+
+<script>
+  /* ======= TOGGLE MOT DE PASSE ======= */
+  function togglePwd() {
+      const inp  = document.getElementById('pwdInput');
+      const icon = document.getElementById('pwdEyeIcon');
+      inp.type   = inp.type === 'password' ? 'text' : 'password';
+      icon.className = inp.type === 'text' ? 'bi bi-eye-slash' : 'bi bi-eye';
+  }
+  function togglePwdConfirm() {
+      const inp  = document.getElementById('pwdConfirm');
+      const icon = document.getElementById('pwdConfirmEyeIcon');
+      inp.type   = inp.type === 'password' ? 'text' : 'password';
+      icon.className = inp.type === 'text' ? 'bi bi-eye-slash' : 'bi bi-eye';
+  }
+
+  /* ======= FORCE DU MOT DE PASSE ======= */
+  document.getElementById('pwdInput').addEventListener('input', function () {
+      const val  = this.value;
+      const bar  = document.getElementById('pwdStrengthBar');
+      const fill = document.getElementById('pwdStrengthFill');
+      const lbl  = document.getElementById('pwdStrengthLabel');
+      if (!val) { bar.style.display = 'none'; checkMatch(); return; }
+      bar.style.display = 'block';
+      let score = 0;
+      if (val.length >= 8)           score++;
+      if (/[A-Z]/.test(val))         score++;
+      if (/[0-9]/.test(val))         score++;
+      if (/[^A-Za-z0-9]/.test(val))  score++;
+      const levels = [
+          { pct:'25%',  color:'#dc2626', text:'Très faible' },
+          { pct:'50%',  color:'#d97706', text:'Faible'      },
+          { pct:'75%',  color:'#2563eb', text:'Moyen'       },
+          { pct:'100%', color:'#16a34a', text:'Fort'        },
+      ];
+      const lvl = levels[Math.max(score - 1, 0)];
+      fill.style.width      = lvl.pct;
+      fill.style.background = lvl.color;
+      lbl.textContent       = lvl.text;
+      lbl.style.color       = lvl.color;
+      checkMatch();
+  });
+
+  /* ======= CORRESPONDANCE MOTS DE PASSE ======= */
+  function checkMatch() {
+      const pwd     = document.getElementById('pwdInput').value;
+      const confirm = document.getElementById('pwdConfirm').value;
+      const msg     = document.getElementById('matchMsg');
+      const btn     = document.getElementById('submitBtn');
+      if (!pwd && !confirm) { msg.style.display = 'none'; btn.disabled = false; return; }
+      msg.style.display = 'block';
+      if (pwd === confirm) {
+          msg.textContent = '✔ Les mots de passe correspondent';
+          msg.style.color = '#16a34a';
+          btn.disabled    = false;
+      } else {
+          msg.textContent = '✖ Les mots de passe ne correspondent pas';
+          msg.style.color = '#dc2626';
+          btn.disabled    = true;
+      }
+  }
+  document.getElementById('pwdConfirm').addEventListener('input', checkMatch);
+
+  /* ======= BADGE + PERMISSIONS PAR RÔLE ======= */
+  const roleColors = {
+      'ADMIN':   { bg:'#eff6ff', color:'#1d4ed8', desc:'Accès total au système' },
+      'AGENT':   { bg:'#fef9c3', color:'#a16207', desc:'Terrain et relevés'      },
+      'CLIENT':  { bg:'#f0fdf4', color:'#15803d', desc:'Espace client uniquement' },
+  };
+  const permMap = {
+      'ADMIN':  'permAdmin',
+      'AGENT':  'permAgent',
+      'CLIENT': 'permClient',
+  };
+
+  function updateRoleBadge(select) {
+      const val    = select.value;
+      const badge  = document.getElementById('roleBadgePreview');
+      const desc   = document.getElementById('roleDesc');
+      const cfg    = roleColors[val] || { bg:'#f1f5f9', color:'#475569', desc:'Rôle personnalisé' };
+      badge.textContent        = val;
+      badge.style.background   = cfg.bg;
+      badge.style.color        = cfg.color;
+      desc.textContent         = cfg.desc;
+
+      // afficher le bon bloc de permissions
+      document.querySelectorAll('.perm-block').forEach(b => b.style.display = 'none');
+      const permId = permMap[val];
+      const permDefault = document.getElementById('permDefault');
+      if (permId) {
+          document.getElementById(permId).style.display = 'block';
+          permDefault.style.display = 'none';
+      } else {
+          permDefault.style.display = 'block';
+      }
+  }
+
+  /* Init au chargement */
+  window.addEventListener('DOMContentLoaded', function () {
+      updateRoleBadge(document.getElementById('roleSelect'));
+  });
+
+  /* ======= QUITTER SANS SAUVEGARDER ======= */
+  let formChanged = false;
+  document.getElementById('editUserForm').addEventListener('change', () => { formChanged = true; });
+  window.addEventListener('beforeunload', function (e) {
+      if (formChanged) { e.preventDefault(); e.returnValue = ''; }
+  });
+  document.getElementById('editUserForm').addEventListener('submit', () => { formChanged = false; });
+</script>
+</body>
+</html>

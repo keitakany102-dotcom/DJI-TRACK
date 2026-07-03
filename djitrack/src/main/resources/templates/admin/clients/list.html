@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: header('Clients')"></head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<div class="main-wrapper">
+    <div th:replace="fragments/sidebar :: sidebar"></div>
+    <main>
+        <div class="page-header fade-up">
+            <div>
+                <h1 class="page-title"><i class="bi bi-people"></i> Clients</h1>
+                <div class="breadcrumb-custom"><i class="bi bi-house"></i> Admin &rsaquo; Clients</div>
+            </div>
+            <a th:href="@{/admin/clients/create}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nouveau client
+            </a>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="card mb-3 fade-up">
+            <div class="card-body py-3">
+                <form th:action="@{/admin/clients}" method="get">
+                    <div class="row align-items-center g-2">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search text-muted"></i>
+                                </span>
+                                <input type="text" name="keyword" class="form-control border-start-0 ps-0"
+                                       placeholder="Rechercher par nom, email, numéro…">
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Rechercher</button>
+                            <a th:href="@{/admin/clients}" class="btn btn-outline-secondary ms-1">Réinitialiser</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card fade-up delay-1">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>N° Client</th>
+                        <th>Nom complet</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Type</th>
+                        <th style="width:130px;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${clients}">
+                        <td><span class="fw-600 text-primary" th:text="${c.numeroClient}"></span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle" style="width:34px;height:34px;flex-shrink:0;font-size:0.8rem;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-600" th:text="${c.nom + ' ' + c.prenom}"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-muted" th:text="${c.email}"></td>
+                        <td th:text="${c.telephone}"></td>
+                        <td><span class="badge badge-status-info" th:text="${c.typeClient}"></span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <a th:href="@{/admin/clients/view/{id}(id=${c.id})}" class="btn btn-icon btn-outline-secondary btn-sm" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a th:href="@{/admin/clients/edit/{id}(id=${c.id})}" class="btn btn-icon btn-primary btn-sm" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a th:href="@{/admin/clients/delete/{id}(id=${c.id})}" class="btn btn-icon btn-danger btn-sm" title="Désactiver"
+                                   onclick="return confirm('Confirmer la désactivation ?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(clients)}">
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-people"></i>
+                                <p>Aucun client trouvé</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>
